@@ -246,17 +246,16 @@ export default function TrialWidget() {
                 <div className="text-gray-600 text-lg">Here's what we found in your receipt</div>
               </div>
 
-              {/* Results Table */}
-              <div className="mb-6 relative">
-                <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-lg z-10 flex items-center justify-center">
-                  <div className="text-center">
-                    <Lock className="h-8 w-8 text-purple-600 mx-auto mb-2" />
-                    <div className="text-sm font-medium text-gray-700 mb-1">Sign up to edit data</div>
-                    <div className="text-xs text-gray-500">Free users can view only</div>
+              {/* Results Table - Show data clearly */}
+              <div className="mb-6">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-center space-x-2 text-green-800">
+                    <CheckCircle className="h-5 w-5" />
+                    <span className="font-medium">Data extracted successfully! Here's what we found:</span>
                   </div>
                 </div>
                 
-                <Table className="border rounded-lg">
+                <Table className="border rounded-lg bg-white">
                   <TableHeader>
                     <TableRow>
                       <TableHead>Field</TableHead>
@@ -311,12 +310,22 @@ export default function TrialWidget() {
 
               {/* Conversion Gates */}
               <div className="space-y-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                  <div className="text-center">
+                    <div className="text-sm font-medium text-blue-800 mb-2">🎉 Great! You can see the extracted data works perfectly</div>
+                    <div className="text-xs text-blue-600">Sign up to unlock editing and downloading features</div>
+                  </div>
+                </div>
+
                 <Button
                   size="lg"
                   className="btn-premium text-white font-semibold px-10 py-4 text-lg w-full rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300"
+                  asChild
                 >
-                  <Lock className="h-6 w-6 mr-3" />
-                  Sign up to download CSV
+                  <a href="/signup">
+                    <Download className="h-6 w-6 mr-3" />
+                    Sign up to download CSV
+                  </a>
                 </Button>
                 
                 <div className="text-center">
@@ -326,9 +335,16 @@ export default function TrialWidget() {
                     variant="outline"
                     size="lg"
                     className="w-full rounded-2xl border-purple-200 text-purple-700 hover:bg-purple-50"
+                    asChild
                   >
-                    Sign up to get started
+                    <a href="/signup">Sign up to get started</a>
                   </Button>
+                </div>
+
+                <div className="text-center text-xs text-gray-500">
+                  <div className="mb-1">✅ View extracted data (free)</div>
+                  <div className="mb-1">🔒 Edit data (sign up required)</div>
+                  <div>🔒 Download CSV (sign up required)</div>
                 </div>
               </div>
             </>
@@ -374,12 +390,17 @@ export default function TrialWidget() {
       {/* Secondary CTA Options */}
       {state === 'upload' && (
         <div className="flex items-center justify-center space-x-8 text-sm text-gray-500 mt-6">
-          <button className="flex items-center space-x-2 hover:text-purple-600 transition-all duration-300 hover:scale-105">
+          <a 
+            href="/signup"
+            className="flex items-center space-x-2 hover:text-purple-600 transition-all duration-300 hover:scale-105"
+          >
             <span>Skip Demo - Sign Up</span>
             <Download className="h-4 w-4" />
-          </button>
+          </a>
           <div className="w-px h-4 bg-gray-300"></div>
-          <span>Already have an account?</span>
+          <a href="/login" className="hover:text-purple-600 transition-colors">
+            Already have an account?
+          </a>
         </div>
       )}
     </div>

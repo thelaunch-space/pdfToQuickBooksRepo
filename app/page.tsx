@@ -43,11 +43,12 @@ export default function HomePage() {
                 variant="ghost"
                 size="sm"
                 className="text-gray-700 hover:text-purple-600 hover:bg-purple-50 transition-all duration-300"
+                asChild
               >
-                Sign In
+                <a href="/login">Sign In</a>
               </Button>
-              <Button size="sm" className="btn-premium text-white font-medium px-6 py-2 rounded-xl">
-                Get Started
+              <Button size="sm" className="btn-premium text-white font-medium px-6 py-2 rounded-xl" asChild>
+                <a href="/signup">Get Started</a>
               </Button>
             </nav>
           </div>
@@ -291,9 +292,11 @@ export default function HomePage() {
             Join hundreds of bookkeepers who have transformed their workflow with{" "}
             <em className="italic">automated receipt processing</em>
           </p>
-          <Button size="lg" className="btn-premium text-white font-semibold px-12 py-6 text-xl rounded-2xl">
-            <Sparkles className="h-6 w-6 mr-3" />
-            Start Free Trial
+          <Button size="lg" className="btn-premium text-white font-semibold px-12 py-6 text-xl rounded-2xl" asChild>
+            <a href="/signup">
+              <Sparkles className="h-6 w-6 mr-3" />
+              Start Free Trial
+            </a>
           </Button>
         </div>
       </section>
