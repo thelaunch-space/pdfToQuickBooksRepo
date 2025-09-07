@@ -64,9 +64,9 @@ export default function SignUpPage() {
           }
         }
         
-        setMessage('Account created successfully! Redirecting to payment...')
+        setMessage('Account created successfully! Redirecting to dashboard...')
         setTimeout(() => {
-          router.push('/payment')
+          router.push('/dashboard')
         }, 2000)
       }
     } catch (err) {
@@ -97,7 +97,7 @@ export default function SignUpPage() {
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-semibold">Sign Up</CardTitle>
             <CardDescription>
-              Start saving 4.5+ hours weekly with automated receipt processing
+              Start saving 4.5+ hours weekly with automated receipt processing - Free during feedback phase
             </CardDescription>
           </CardHeader>
           <CardContent>

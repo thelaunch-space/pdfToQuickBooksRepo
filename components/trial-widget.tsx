@@ -330,21 +330,22 @@ export default function TrialWidget() {
                 
                 <div className="text-center">
                   <div className="text-sm font-medium text-gray-700 mb-2">Want to process 10 receipts at once?</div>
-                  <div className="text-lg font-semibold text-purple-700 mb-4">$9/month for 1500 pages</div>
+                  <div className="text-lg font-semibold text-green-700 mb-2">FREE during feedback phase</div>
+                  <div className="text-sm text-gray-600 mb-4">$9/month after feedback period</div>
                   <Button
                     variant="outline"
                     size="lg"
-                    className="w-full rounded-2xl border-purple-200 text-purple-700 hover:bg-purple-50"
+                    className="w-full rounded-2xl border-green-200 text-green-700 hover:bg-green-50"
                     asChild
                   >
-                    <a href="/signup">Sign up to get started</a>
+                    <a href="/signup">Start Free Now</a>
                   </Button>
                 </div>
 
                 <div className="text-center text-xs text-gray-500">
                   <div className="mb-1">✅ View extracted data (free)</div>
-                  <div className="mb-1">🔒 Edit data (sign up required)</div>
-                  <div>🔒 Download CSV (sign up required)</div>
+                  <div className="mb-1">🔒 Edit data (sign up for free access)</div>
+                  <div>🔒 Download CSV (sign up for free access)</div>
                 </div>
               </div>
             </>

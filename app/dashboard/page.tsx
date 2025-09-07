@@ -270,12 +270,10 @@ export default function DashboardPage() {
                       Resets: {profile?.usage_reset_date ? new Date(profile.usage_reset_date).toLocaleDateString() : 'Loading...'}
                     </span>
                   </div>
-                  <div className={`flex items-center gap-2 ${
-                    profile?.subscription_status === 'active' ? 'text-green-600' : 'text-red-600'
-                  }`}>
+                  <div className="flex items-center gap-2 text-green-600">
                     <CreditCard className="h-4 w-4" />
-                    <span className="font-medium capitalize">
-                      {profile ? profile.subscription_status : 'Loading...'}
+                    <span className="font-medium">
+                      Free (Feedback Phase)
                     </span>
                   </div>
                 </div>
