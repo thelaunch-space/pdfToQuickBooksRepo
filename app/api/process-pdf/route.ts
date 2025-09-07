@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   console.log('🚀 PDF Processing API called')
+  console.log('🔍 Request URL:', request.url)
+  console.log('🔍 Request method:', request.method)
   
   try {
     const formData = await request.formData()
@@ -166,10 +168,14 @@ Return ONLY valid JSON, no other text. If any field cannot be determined, use "U
     }
 
     console.log('✅ Final cleaned data:', cleanedData)
-    return NextResponse.json({
+    
+    const response = NextResponse.json({
       success: true,
       data: cleanedData
     })
+    
+    console.log('📤 Sending response:', response.status)
+    return response
 
   } catch (error) {
     console.error('💥 PDF processing error:', error)
