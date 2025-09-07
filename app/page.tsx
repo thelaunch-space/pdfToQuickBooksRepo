@@ -283,6 +283,109 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Pricing Section */}
+      <section id="pricing" className="py-32 bg-gradient-to-br from-gray-50 to-white">
+        <div className="max-w-6xl mx-auto px-8">
+          <div className="text-center mb-20">
+            <h2 className="text-5xl md:text-6xl font-serif heading-premium mb-8 leading-tight">
+              Simple, Transparent <em className="italic text-3d">Pricing</em>
+            </h2>
+            <p className="text-xl subheading-premium mb-6 leading-relaxed">
+              One plan. All features. No hidden fees.
+            </p>
+            <div className="inline-flex items-center bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-medium">
+              <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+              Currently FREE during feedback phase
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {/* Free Phase Card */}
+            <div className="card-premium rounded-3xl p-8 border-2 border-green-200 bg-gradient-to-br from-green-50 to-white">
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium mb-4">
+                  Limited Time
+                </div>
+                <h3 className="text-2xl font-semibold text-gray-900 mb-2">Free Feedback Phase</h3>
+                <div className="text-4xl font-bold text-green-600 mb-2">$0<span className="text-lg text-gray-500">/month</span></div>
+                <p className="text-gray-600">Help us improve the product</p>
+              </div>
+              <ul className="space-y-4 mb-8">
+                <li className="flex items-center space-x-3">
+                  <Check className="h-5 w-5 text-green-500" />
+                  <span className="text-gray-700">1,500 pages per month</span>
+                </li>
+                <li className="flex items-center space-x-3">
+                  <Check className="h-5 w-5 text-green-500" />
+                  <span className="text-gray-700">Up to 10 files per batch</span>
+                </li>
+                <li className="flex items-center space-x-3">
+                  <Check className="h-5 w-5 text-green-500" />
+                  <span className="text-gray-700">QuickBooks-ready CSV export</span>
+                </li>
+                <li className="flex items-center space-x-3">
+                  <Check className="h-5 w-5 text-green-500" />
+                  <span className="text-gray-700">Edit and review extracted data</span>
+                </li>
+                <li className="flex items-center space-x-3">
+                  <Check className="h-5 w-5 text-green-500" />
+                  <span className="text-gray-700">Direct feedback channel</span>
+                </li>
+              </ul>
+              <Button className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-xl" asChild>
+                <a href="/signup">Start Free Now</a>
+              </Button>
+            </div>
+
+            {/* Future Paid Plan */}
+            <div className="card-premium rounded-3xl p-8 border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-white">
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium mb-4">
+                  Coming Soon
+                </div>
+                <h3 className="text-2xl font-semibold text-gray-900 mb-2">Professional Plan</h3>
+                <div className="text-4xl font-bold text-purple-600 mb-2">$9<span className="text-lg text-gray-500">/month</span></div>
+                <p className="text-gray-600">Full production features</p>
+              </div>
+              <ul className="space-y-4 mb-8">
+                <li className="flex items-center space-x-3">
+                  <Check className="h-5 w-5 text-purple-500" />
+                  <span className="text-gray-700">1,500 pages per month</span>
+                </li>
+                <li className="flex items-center space-x-3">
+                  <Check className="h-5 w-5 text-purple-500" />
+                  <span className="text-gray-700">Up to 10 files per batch</span>
+                </li>
+                <li className="flex items-center space-x-3">
+                  <Check className="h-5 w-5 text-purple-500" />
+                  <span className="text-gray-700">QuickBooks-ready CSV export</span>
+                </li>
+                <li className="flex items-center space-x-3">
+                  <Check className="h-5 w-5 text-purple-500" />
+                  <span className="text-gray-700">Edit and review extracted data</span>
+                </li>
+                <li className="flex items-center space-x-3">
+                  <Check className="h-5 w-5 text-purple-500" />
+                  <span className="text-gray-700">Priority email support</span>
+                </li>
+              </ul>
+              <Button variant="outline" className="w-full border-purple-300 text-purple-700 hover:bg-purple-50 font-semibold py-3 rounded-xl" disabled>
+                Available Soon
+              </Button>
+            </div>
+          </div>
+
+          <div className="text-center mt-12">
+            <p className="text-gray-600 mb-4">
+              <strong>Free feedback phase includes:</strong> All features, unlimited usage, direct access to our team for feedback
+            </p>
+            <p className="text-sm text-gray-500">
+              We'll notify you 30 days before transitioning to paid plans. No surprise charges.
+            </p>
+          </div>
+        </div>
+      </section>
+
       <section className="py-32 hero-bg">
         <div className="max-w-4xl mx-auto px-8 text-center relative z-10">
           <h2 className="text-5xl md:text-6xl font-serif heading-premium mb-8 leading-tight">
@@ -295,7 +398,7 @@ export default function HomePage() {
           <Button size="lg" className="btn-premium text-white font-semibold px-12 py-6 text-xl rounded-2xl" asChild>
             <a href="/signup">
               <Sparkles className="h-6 w-6 mr-3" />
-              Start Free Trial
+              Start Free Now
             </a>
           </Button>
         </div>
