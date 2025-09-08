@@ -60,8 +60,8 @@ ${formatInstructions}
 
 Return ONLY valid JSON, no other text. If any field cannot be determined, use "Unknown" as the value.`
 
-    // Use the correct Mistral OCR API structure
-    console.log('📤 Sending request to OpenRouter with Mistral OCR...')
+    // Use the correct OpenRouter API structure for file processing
+    console.log('📤 Sending request to OpenRouter...')
     const requestBody = {
       model: engine,
       messages: [
@@ -82,20 +82,22 @@ Return ONLY valid JSON, no other text. If any field cannot be determined, use "U
           ]
         }
       ],
-      plugins: [
-        {
-          id: 'file-parser',
-          pdf: {
-            engine: ocrEngine
-          }
-        }
-      ],
       max_tokens: 500,
       temperature: 0.1
     }
     
+    console.log('🔑 API Key present:', !!process.env.OPENROUTER_API_KEY)
+    console.log('🔑 API Key length:', process.env.OPENROUTER_API_KEY?.length || 0)
+    
     console.log('📋 Request body:', JSON.stringify(requestBody, null, 2))
     
+    // Create AbortController for timeout
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => {
+      console.log('⏰ OpenRouter API timeout after 25 seconds')
+      controller.abort()
+    }, 25000)
+
     const openRouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -104,8 +106,11 @@ Return ONLY valid JSON, no other text. If any field cannot be determined, use "U
         'HTTP-Referer': 'https://pdf-to-quickbooks.vercel.app',
         'X-Title': 'PDF to QuickBooks'
       },
-      body: JSON.stringify(requestBody)
+      body: JSON.stringify(requestBody),
+      signal: controller.signal
     })
+    
+    clearTimeout(timeoutId)
     
     console.log('📥 Response status:', openRouterResponse.status)
 
@@ -180,9 +185,22 @@ Return ONLY valid JSON, no other text. If any field cannot be determined, use "U
   } catch (error) {
     console.error('💥 PDF processing error:', error)
     console.error('💥 Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+    
+    let errorMessage = 'Internal server error'
+    let statusCode = 500
+    
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        errorMessage = 'Request timed out. Please try again with a smaller file.'
+        statusCode = 408
+      } else {
+        errorMessage = error.message
+      }
+    }
+    
     return NextResponse.json({ 
-      error: 'Internal server error',
+      error: errorMessage,
       details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 })
+    }, { status: statusCode })
   }
 }
