@@ -58,12 +58,8 @@ export async function GET(
       }, { status: 403 })
     }
 
-    // Only allow access to completed batches
-    if (batch.status !== 'completed') {
-      return NextResponse.json({ 
-        error: 'Batch is not completed yet' 
-      }, { status: 400 })
-    }
+    // Allow access to all batches (completed, processing, failed)
+    // Frontend will handle view-only mode for completed batches
 
     // Fetch all extractions for this batch
     const { data: extractions, error: extractionsError } = await supabase
@@ -97,6 +93,7 @@ export async function GET(
       success: true,
       batch: {
         id: batch.id,
+        status: batch.status,
         csv_format: batch.csv_format,
         account_name: (batch.accounts as any)?.name
       },

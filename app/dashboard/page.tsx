@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Progress } from '@/components/ui/progress'
-import { FileText, LogOut, User, CreditCard, BarChart3, Plus, Building2, AlertTriangle, Calendar, History } from 'lucide-react'
+import { FileText, LogOut, User, CreditCard, BarChart3, Plus, Building2, AlertTriangle, Calendar, History, Download, Eye, Pencil } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 import { supabase } from '@/lib/supabase'
 import { toast } from '@/hooks/use-toast'
@@ -27,6 +27,9 @@ export default function DashboardPage() {
   const [createAccountOpen, setCreateAccountOpen] = useState(false)
   const [newAccountName, setNewAccountName] = useState('')
   const [creatingAccount, setCreatingAccount] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalBatches, setTotalBatches] = useState(0)
+  const batchesPerPage = 10
   const { user, signOut } = useAuth()
 
   useEffect(() => {
@@ -41,7 +44,8 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (selectedAccount) {
-      fetchBatches(selectedAccount)
+      setCurrentPage(1)
+      fetchBatches(selectedAccount, 1)
     }
   }, [selectedAccount])
 
@@ -103,15 +107,33 @@ export default function DashboardPage() {
     }
   }
 
-  const fetchBatches = async (accountId: string) => {
+  const fetchBatches = async (accountId: string, page: number = 1) => {
     if (!accountId) return
 
     try {
+      const from = (page - 1) * batchesPerPage
+      const to = from + batchesPerPage - 1
+
+      // Get total count for pagination
+      const { count, error: countError } = await supabase
+        .from('batches')
+        .select('*', { count: 'exact', head: true })
+        .eq('account_id', accountId)
+
+      if (countError) {
+        console.error('Error fetching batch count:', countError)
+        return
+      }
+
+      setTotalBatches(count || 0)
+
+      // Get paginated batches
       const { data, error } = await supabase
         .from('batches')
         .select('*')
         .eq('account_id', accountId)
         .order('processed_at', { ascending: false })
+        .range(from, to)
 
       if (error) {
         console.error('Error fetching batches:', error)
@@ -128,6 +150,56 @@ export default function DashboardPage() {
       toast({
         title: "Error",
         description: "Failed to load batch history",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const handleDownloadCSV = async (batchId: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        throw new Error('No valid session found')
+      }
+
+      const response = await fetch(`/api/batches/${batchId}/export-csv`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to export CSV')
+      }
+
+      // Get filename from Content-Disposition header
+      const contentDisposition = response.headers.get('Content-Disposition')
+      const filename = contentDisposition 
+        ? contentDisposition.split('filename=')[1]?.replace(/"/g, '') 
+        : `QuickBooks_Export_${new Date().toISOString().split('T')[0]}.csv`
+
+      // Create blob and trigger download
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+
+      toast({
+        title: "Success",
+        description: "CSV file downloaded successfully",
+      })
+    } catch (error) {
+      console.error('Error downloading CSV:', error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to download CSV",
         variant: "destructive"
       })
     }
@@ -176,8 +248,17 @@ export default function DashboardPage() {
   }
 
   const handleSignOut = async () => {
-    await signOut()
-    router.push('/')
+    try {
+      await signOut()
+      // Small delay to ensure auth state is fully cleared
+      setTimeout(() => {
+        router.push('/')
+      }, 100)
+    } catch (error) {
+      console.error('Sign out error:', error)
+      // Still redirect even if there's an error
+      router.push('/')
+    }
   }
 
   if (!user || loading) {
@@ -192,29 +273,36 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-purple-50/30">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-xl border-b border-white/20 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-8">
-          <div className="flex h-20 items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-purple-700 text-white rounded-2xl flex items-center justify-center shadow-lg">
-                <FileText className="h-5 w-5" />
+      <header className="bg-white/95 backdrop-blur-2xl border-b border-slate-200/60 sticky top-0 z-50 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex h-16 items-center justify-between">
+            <div className="flex items-center space-x-6">
+              <div className="flex items-center space-x-3">
+                <div className="w-9 h-9 bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 text-white rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/25">
+                  <FileText className="h-4 w-4" />
+                </div>
+                <span className="text-lg font-semibold text-slate-900 tracking-tight">PDF to QuickBooks</span>
               </div>
-              <span className="text-xl font-semibold text-gray-900">PDF to QuickBooks</span>
+              <nav className="hidden md:flex items-center space-x-1">
+                <div className="px-3 py-2 bg-purple-50 text-purple-700 rounded-lg font-medium text-sm">
+                  Dashboard
+                </div>
+              </nav>
             </div>
-            <div className="flex items-center space-x-4">
-              <div className="text-sm text-gray-600">
-                Welcome, {user.email}
+            <div className="flex items-center space-x-3">
+              <div className="text-sm text-slate-600 hidden sm:block font-medium">
+                {user.email}
               </div>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleSignOut}
-                className="text-gray-700 hover:text-purple-600 hover:bg-purple-50"
+                className="text-slate-600 hover:text-purple-600 hover:bg-purple-50/80 h-8 px-3 transition-all duration-200"
               >
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
+                <LogOut className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline font-medium">Sign Out</span>
               </Button>
             </div>
           </div>
@@ -222,113 +310,75 @@ export default function DashboardPage() {
       </header>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-8 py-12">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Dashboard</h1>
-          <p className="text-gray-600">Manage your receipt processing and subscription</p>
-        </div>
-
-        {/* Usage Tracking Display */}
-        <div className="mb-8">
-          <Card className="shadow-lg border-0">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-purple-600" />
-                Usage Tracking
-              </CardTitle>
-              <CardDescription>
-                Monitor your monthly page processing limit
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-2xl font-bold text-gray-900">
-                      {profile ? `${profile.monthly_usage} / 1,500` : 'Loading...'}
-                    </div>
-                    <p className="text-sm text-gray-500">Pages processed this month</p>
-                  </div>
-                  <div className="text-right">
-                    <div className={`text-lg font-semibold ${
-                      profile && (profile.monthly_usage / 1500) >= 0.9 ? 'text-red-600' : 'text-gray-900'
-                    }`}>
-                      {profile ? `${Math.round((profile.monthly_usage / 1500) * 100)}%` : '0%'}
-                    </div>
-                    <p className="text-sm text-gray-500">of monthly limit</p>
-                  </div>
-                </div>
-                
-                <Progress 
-                  value={profile ? (profile.monthly_usage / 1500) * 100 : 0} 
-                  className="h-3"
-                />
-                
-                <div className="flex items-center justify-between text-sm">
+      <div className="max-w-7xl mx-auto px-6 py-6">
+        {/* Two Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column - Compact Cards Stacked Vertically */}
+          <div className="space-y-6">
+            {/* Usage Tracking - Compact */}
+            <Card className="group relative overflow-hidden border-0 bg-white/80 backdrop-blur-xl shadow-lg shadow-slate-200/50 hover:shadow-xl hover:shadow-slate-200/60 transition-all duration-300">
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <CardContent className="relative p-6">
+                <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-gray-400" />
-                    <span className="text-gray-600">
-                      Resets: {profile?.usage_reset_date ? new Date(profile.usage_reset_date).toLocaleDateString() : 'Loading...'}
-                    </span>
+                    <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-md shadow-purple-500/25">
+                      <BarChart3 className="h-4 w-4 text-white" />
+                    </div>
+                    <span className="text-sm font-semibold text-slate-700">Usage</span>
                   </div>
-                  <div className="flex items-center gap-2 text-green-600">
-                    <CreditCard className="h-4 w-4" />
-                    <span className="font-medium">
-                      Free (Feedback Phase)
-                    </span>
+                  <div className="flex items-center gap-1 px-2 py-1 bg-emerald-50 rounded-full">
+                    <CreditCard className="h-3 w-3 text-emerald-600" />
+                    <span className="text-xs font-semibold text-emerald-700">Free</span>
                   </div>
                 </div>
-
-                {/* Warning notification at 90% usage */}
-                {profile && (profile.monthly_usage / 1500) >= 0.9 && (
-                  <Alert className="border-orange-200 bg-orange-50">
-                    <AlertTriangle className="h-4 w-4 text-orange-600" />
-                    <AlertDescription className="text-orange-800">
-                      You're approaching your monthly limit. Consider upgrading your plan for more processing capacity.
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Account Management System */}
-        <div className="mb-8">
-          <Card className="shadow-lg border-0">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Building2 className="h-5 w-5 text-purple-600" />
-                Client Account Management
-              </CardTitle>
-              <CardDescription>
-                Organize your work by client organization
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className="flex-1">
-                    <Label htmlFor="account-select" className="text-sm font-medium text-gray-700">
-                      Select Client Account
-                    </Label>
-                    <Select value={selectedAccount} onValueChange={setSelectedAccount}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Choose a client account" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {accounts.map((account) => (
-                          <SelectItem key={account.id} value={account.id}>
-                            {account.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                <div className="space-y-3">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-bold text-slate-900 tracking-tight">
+                      {profile ? profile.monthly_usage : '0'}
+                    </span>
+                    <span className="text-sm text-slate-500 font-medium">/ 1,500</span>
                   </div>
+                  <div className="space-y-1">
+                    <Progress 
+                      value={profile ? (profile.monthly_usage / 1500) * 100 : 0} 
+                      className="h-1.5 bg-slate-100"
+                    />
+                    <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
+                      <span>{profile ? `${Math.round((profile.monthly_usage / 1500) * 100)}%` : '0%'}</span>
+                      <span>Resets {profile?.usage_reset_date ? new Date(profile.usage_reset_date).toLocaleDateString() : 'Loading...'}</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Account Selection - Compact */}
+            <Card className="group relative overflow-hidden border-0 bg-white/80 backdrop-blur-xl shadow-lg shadow-slate-200/50 hover:shadow-xl hover:shadow-slate-200/60 transition-all duration-300">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <CardContent className="relative p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md shadow-blue-500/25">
+                    <Building2 className="h-4 w-4 text-white" />
+                  </div>
+                  <span className="text-sm font-semibold text-slate-700">Client Account</span>
+                </div>
+                <div className="space-y-3">
+                  <Select value={selectedAccount} onValueChange={setSelectedAccount}>
+                    <SelectTrigger className="h-10 bg-slate-50/50 border-slate-200 hover:bg-slate-50 transition-colors duration-200">
+                      <SelectValue placeholder="Select account" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {accounts.map((account) => (
+                        <SelectItem key={account.id} value={account.id}>
+                          {account.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <Dialog open={createAccountOpen} onOpenChange={setCreateAccountOpen}>
                     <DialogTrigger asChild>
-                      <Button className="mt-6">
-                        <Plus className="h-4 w-4 mr-2" />
+                      <Button variant="outline" size="sm" className="w-full h-9 bg-white/50 hover:bg-white border-slate-200 hover:border-slate-300 transition-all duration-200">
+                        <Plus className="h-3 w-3 mr-2" />
                         New Account
                       </Button>
                     </DialogTrigger>
@@ -371,124 +421,186 @@ export default function DashboardPage() {
                     </DialogContent>
                   </Dialog>
                 </div>
+              </CardContent>
+            </Card>
 
-                {accounts.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
-                    <Building2 className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                    <p className="text-lg font-medium mb-2">No client accounts yet</p>
-                    <p className="text-sm">Create your first client account to start organizing your receipt processing work.</p>
+            {/* Processing History - Scrollable with Edit */}
+            <Card className="group relative overflow-hidden border-0 bg-white/90 backdrop-blur-xl shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-slate-200/60 transition-all duration-300">
+              <div className="absolute inset-0 bg-gradient-to-br from-slate-500/3 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <CardHeader className="relative pb-4">
+                <CardTitle className="flex items-center gap-2 text-lg font-bold text-slate-900 tracking-tight">
+                  <div className="w-7 h-7 bg-gradient-to-br from-slate-500 to-slate-600 rounded-lg flex items-center justify-center shadow-md shadow-slate-500/25">
+                    <History className="h-3 w-3 text-white" />
                   </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Batch History */}
-        {selectedAccount && (
-          <div className="mb-8">
-            <Card className="shadow-lg border-0">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <History className="h-5 w-5 text-purple-600" />
                   Processing History
                 </CardTitle>
-                <CardDescription>
-                  View past batch processing sessions for {accounts.find(acc => acc.id === selectedAccount)?.name}
+                <CardDescription className="text-slate-600 font-medium text-sm">
+                  {selectedAccount ? `Recent batches for ${accounts.find(acc => acc.id === selectedAccount)?.name}` : 'Your batch processing history will appear here'}
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                {batches.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <History className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                    <p className="text-lg font-medium mb-2">No processing history</p>
-                    <p className="text-sm">Start processing receipts to see your batch history here.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {batches.map((batch) => (
-                      <div key={batch.id} className="flex items-center justify-between p-4 border rounded-lg bg-gray-50">
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                            <FileText className="h-5 w-5 text-purple-600" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-900">
-                              {batch.file_count} file{batch.file_count !== 1 ? 's' : ''} processed
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              {batch.total_pages} pages • {batch.csv_format} format
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <div className="text-right">
-                            <p className="text-sm font-medium text-gray-900">
-                              {new Date(batch.processed_at).toLocaleDateString()}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {new Date(batch.processed_at).toLocaleTimeString()}
-                            </p>
-                          </div>
-                          <Button
-                            size="sm"
-                            className="bg-purple-600 hover:bg-purple-700 text-white"
-                            onClick={() => router.push(`/review/${batch.id}`)}
-                          >
-                            <FileText className="h-4 w-4 mr-2" />
-                            Review & Edit
-                          </Button>
-                        </div>
+              <CardContent className="relative">
+                {selectedAccount ? (
+                  batches.length === 0 ? (
+                    <div className="text-center py-8 text-slate-500">
+                      <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                        <History className="h-6 w-6 text-slate-400" />
                       </div>
-                    ))}
+                      <p className="font-semibold mb-1 text-slate-700 text-sm">No processing history</p>
+                      <p className="text-xs">Start processing receipts to see your batch history here.</p>
+                    </div>
+                  ) : (
+                    <div className="max-h-80 overflow-y-auto space-y-3 pr-2">
+                      {batches.map((batch) => {
+                        const processedDate = new Date(batch.processed_at)
+                        const timeString = processedDate.toLocaleTimeString('en-US', { 
+                          hour: 'numeric', 
+                          minute: '2-digit',
+                          hour12: true 
+                        })
+                        const dateString = processedDate.toLocaleDateString()
+                        
+                        return (
+                          <div key={batch.id} className="group/item flex items-center justify-between p-3 border border-slate-200/60 rounded-lg bg-slate-50/30 hover:bg-slate-50/60 hover:border-slate-300/60 transition-all duration-200">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-sm shadow-purple-500/20">
+                                <FileText className="h-4 w-4 text-white" />
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <p className="text-sm font-semibold text-slate-900">
+                                    {batch.file_count} file{batch.file_count !== 1 ? 's' : ''}
+                                  </p>
+                                  <span className={`px-2 py-0.5 text-xs rounded-full font-semibold ${
+                                    batch.status === 'completed' 
+                                      ? 'bg-emerald-100 text-emerald-700' 
+                                      : batch.status === 'processing'
+                                      ? 'bg-amber-100 text-amber-700'
+                                      : 'bg-red-100 text-red-700'
+                                  }`}>
+                                    {batch.status}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-slate-500 font-medium">
+                                  {batch.total_pages} pages • {dateString} at {timeString}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity duration-200">
+                              {batch.status === 'completed' && (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleDownloadCSV(batch.id)}
+                                    className="h-8 px-2 bg-white/80 hover:bg-white border-slate-200 hover:border-slate-300 shadow-sm"
+                                    title="Download CSV"
+                                  >
+                                    <Download className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white h-8 px-2 shadow-sm shadow-blue-500/25"
+                                    onClick={() => router.push(`/review/${batch.id}`)}
+                                    title="Edit data"
+                                  >
+                                    <Pencil className="h-3 w-3" />
+                                  </Button>
+                                </>
+                              )}
+                              <Button
+                                size="sm"
+                                className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white h-8 px-2 shadow-sm shadow-purple-500/25"
+                                onClick={() => router.push(`/review/${batch.id}`)}
+                                title={batch.status === 'completed' ? 'View data' : 'View progress'}
+                              >
+                                {batch.status === 'completed' ? (
+                                  <Eye className="h-3 w-3" />
+                                ) : (
+                                  <FileText className="h-3 w-3" />
+                                )}
+                              </Button>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )
+                ) : (
+                  <div className="text-center py-8 text-slate-400">
+                    <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                      <History className="h-6 w-6" />
+                    </div>
+                    <p className="text-sm font-medium">Select a client account to view processing history</p>
                   </div>
                 )}
               </CardContent>
             </Card>
           </div>
-        )}
 
-        {/* Batch Processing Interface */}
-        {selectedAccount ? (
-          <BatchProcessingWidget
-            selectedAccountId={selectedAccount}
-            selectedAccountName={accounts.find(acc => acc.id === selectedAccount)?.name || ''}
-            userProfile={profile}
-            onBatchComplete={() => {
-              fetchBatches(selectedAccount)
-              fetchProfile() // Refresh usage tracking
-            }}
-          />
-        ) : (
-          <Card className="shadow-xl border-0">
-            <CardHeader>
-              <CardTitle className="text-2xl font-semibold">Start Processing Receipts</CardTitle>
-              <CardDescription>
-                Select a client account above to start processing receipts
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12">
-                <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                  <FileText className="h-12 w-12" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                  Select a Client Account
-                </h3>
-                <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                  Choose a client account from the dropdown above to start processing receipts. 
-                  If you don't have any accounts yet, create your first one to get started.
-                </p>
-                <Button 
-                  disabled
-                  className="bg-gray-400 text-white font-semibold px-8 py-3 cursor-not-allowed"
-                >
-                  Select Account First
-                </Button>
+          {/* Right Column - Batch Processing Widget (Wider) */}
+          <div className="lg:col-span-2">
+            {/* Warning notification at 90% usage */}
+            {profile && (profile.monthly_usage / 1500) >= 0.9 && (
+              <Alert className="border-orange-200 bg-orange-50 mb-6">
+                <AlertTriangle className="h-4 w-4 text-orange-600" />
+                <AlertDescription className="text-orange-800">
+                  You're approaching your monthly limit. Consider upgrading your plan for more processing capacity.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {selectedAccount ? (
+              <div id="batch-processing-widget" className="transform transition-all duration-300 hover:scale-[1.01]">
+                <BatchProcessingWidget
+                  selectedAccountId={selectedAccount}
+                  selectedAccountName={accounts.find(acc => acc.id === selectedAccount)?.name || ''}
+                  userProfile={profile}
+                  onBatchComplete={() => {
+                    fetchBatches(selectedAccount)
+                    fetchProfile() // Refresh usage tracking
+                  }}
+                />
               </div>
-            </CardContent>
-          </Card>
-        )}
+            ) : (
+              <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-slate-50 via-white to-purple-50/50 shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-slate-200/60 transition-all duration-500">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <CardHeader className="relative text-center pb-6">
+                  <div className="w-20 h-20 bg-gradient-to-br from-purple-500 via-purple-600 to-purple-700 text-white rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-purple-500/25 group-hover:shadow-3xl group-hover:shadow-purple-500/30 transition-all duration-500">
+                    <FileText className="h-10 w-10" />
+                  </div>
+                  <CardTitle className="text-2xl font-bold text-slate-900 tracking-tight">Start Processing Receipts</CardTitle>
+                  <CardDescription className="text-slate-600 text-lg font-medium mt-2">
+                    Select a client account above to begin processing your PDF receipts
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="relative text-center">
+                  <div className="space-y-6">
+                    <div className="text-sm text-slate-500 space-y-2 font-medium">
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-purple-500 rounded-full"></div>
+                        <p>Upload up to 10 PDF receipts at once</p>
+                      </div>
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-purple-500 rounded-full"></div>
+                        <p>Automatic data extraction with AI</p>
+                      </div>
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-purple-500 rounded-full"></div>
+                        <p>Export to QuickBooks format</p>
+                      </div>
+                    </div>
+                    <Button 
+                      disabled
+                      className="bg-slate-200 text-slate-400 font-semibold px-8 py-3 cursor-not-allowed rounded-xl"
+                    >
+                      Select Account First
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )

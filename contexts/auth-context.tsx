@@ -103,8 +103,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signOut = async () => {
-    await supabase.auth.signOut()
-    localStorage.removeItem('pdf-to-quickbooks-auth')
+    try {
+      await supabase.auth.signOut()
+      // Clear local state immediately
+      setUser(null)
+      setSession(null)
+      setLoading(false)
+      // Clear localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('pdf-to-quickbooks-auth')
+      }
+    } catch (error) {
+      console.error('Sign out error:', error)
+      // Still clear local state even if Supabase signOut fails
+      setUser(null)
+      setSession(null)
+      setLoading(false)
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('pdf-to-quickbooks-auth')
+      }
+    }
   }
 
   const value = {
