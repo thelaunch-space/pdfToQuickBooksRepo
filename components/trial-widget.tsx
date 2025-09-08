@@ -44,9 +44,15 @@ export default function TrialWidget() {
       formData.append('format', selectedFormat)
 
       console.log('📤 Sending request to API...')
+      
+      // Create an AbortController for timeout
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+      
       const apiPromise = fetch('/api/process-pdf', {
         method: 'POST',
-        body: formData
+        body: formData,
+        signal: controller.signal
       })
 
       // Update progress while API call is running
@@ -64,7 +70,8 @@ export default function TrialWidget() {
       console.log('⏳ Waiting for API response...')
       const response = await apiPromise
       
-      // Clear progress interval and set to 100%
+      // Clear timeout and progress interval
+      clearTimeout(timeoutId)
       clearInterval(progressInterval)
       setProcessingProgress(100)
       
@@ -85,9 +92,24 @@ export default function TrialWidget() {
       setState('results')
     } catch (error) {
       console.error('💥 Processing error:', error)
+      
+      // Clear any pending timeouts/intervals
+      clearTimeout(timeoutId)
+      clearInterval(progressInterval)
+      
+      let errorMessage = 'Failed to process PDF. Please try again.'
+      
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          errorMessage = 'Request timed out. Please try again with a smaller file.'
+        } else {
+          errorMessage = error.message
+        }
+      }
+      
       setResult({
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to process PDF. Please try again.'
+        error: errorMessage
       })
       setState('error')
     }
@@ -154,14 +176,13 @@ export default function TrialWidget() {
 
   return (
     <div className="lg:pl-8">
-      <div className="mb-6">
-        <div className="flex items-center space-x-3 text-purple-700 font-medium">
-          <FileText className="h-5 w-5" />
-          <span>Free Demo: Try 1 PDF • No signup</span>
+      <div className="mb-6 text-center">
+        <div className="text-purple-700 font-medium">
+          <span className="italic text-sm">Free Demo: Try 1 PDF • No signup</span>
         </div>
       </div>
 
-      <div className="widget-premium rounded-3xl p-12 text-center floating border-2 border-purple-100/50 bg-gradient-to-br from-white via-purple-50/30 to-white shadow-[0_20px_70px_-10px_rgba(139,92,246,0.3)] backdrop-blur-sm relative overflow-hidden">
+      <div className="widget-premium rounded-3xl p-8 text-center floating border-2 border-purple-100/50 bg-gradient-to-br from-white via-purple-50/30 to-white shadow-[0_20px_70px_-10px_rgba(139,92,246,0.3)] backdrop-blur-sm relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-purple-600/5 pointer-events-none"></div>
         <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-purple-300/50 to-transparent"></div>
         <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-purple-300/30 to-transparent"></div>
@@ -169,12 +190,12 @@ export default function TrialWidget() {
         <div className="relative z-10">
           {state === 'upload' && (
             <>
-              <div className="mb-8">
-                <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-purple-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl ring-4 ring-purple-100/50">
-                  <Upload className="h-10 w-10 text-white" />
+              <div className="mb-6">
+                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl ring-2 ring-purple-100/50">
+                  <Upload className="h-8 w-8 text-white" />
                 </div>
-                <div className="text-2xl font-semibold text-gray-900 mb-3">Try with your receipt PDF</div>
-                <div className="text-gray-600 text-lg">Drop 1 PDF here to see the magic • No sign-up required</div>
+                <div className="text-xl font-semibold text-gray-900 mb-2">Try with your receipt PDF</div>
+                <div className="text-gray-600">Drop 1 PDF here to see the magic • No sign-up required</div>
               </div>
 
               {/* Format Selection */}
@@ -196,7 +217,7 @@ export default function TrialWidget() {
               </div>
 
               <div
-                className="border-2 border-dashed border-purple-300 rounded-2xl p-8 mb-4 hover:border-purple-400 transition-colors cursor-pointer"
+                className="border-2 border-dashed border-purple-300 rounded-xl p-6 mb-4 hover:border-purple-400 transition-colors cursor-pointer"
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
                 onClick={() => document.getElementById('file-upload')?.click()}
@@ -208,8 +229,8 @@ export default function TrialWidget() {
                   onChange={handleFileUpload}
                   className="hidden"
                 />
-                <Upload className="h-8 w-8 text-purple-500 mx-auto mb-3" />
-                <div className="text-lg font-medium text-gray-700 mb-2">Click to upload or drag & drop</div>
+                <Upload className="h-6 w-6 text-purple-500 mx-auto mb-2" />
+                <div className="text-base font-medium text-gray-700 mb-1">Click to upload or drag & drop</div>
                 <div className="text-sm text-gray-500">PDF files only • Max 10MB</div>
               </div>
 
@@ -238,23 +259,16 @@ export default function TrialWidget() {
 
           {state === 'results' && result?.data && (
             <>
-              <div className="mb-8">
-                <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-green-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl ring-4 ring-green-100/50">
-                  <CheckCircle className="h-10 w-10 text-white" />
+              <div className="mb-6">
+                <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl ring-2 ring-green-100/50">
+                  <CheckCircle className="h-8 w-8 text-white" />
                 </div>
-                <div className="text-2xl font-semibold text-gray-900 mb-3">Data Extracted Successfully!</div>
-                <div className="text-gray-600 text-lg">Here's what we found in your receipt</div>
+                <div className="text-xl font-semibold text-gray-900 mb-2">Data Extracted Successfully!</div>
+                <div className="text-gray-600">Here's what we found in your receipt</div>
               </div>
 
-              {/* Results Table - Show data clearly */}
-              <div className="mb-6">
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-                  <div className="flex items-center space-x-2 text-green-800">
-                    <CheckCircle className="h-5 w-5" />
-                    <span className="font-medium">Data extracted successfully! Here's what we found:</span>
-                  </div>
-                </div>
-                
+              {/* Results Table - Clean and simple */}
+              <div className="mb-6 max-h-64 overflow-y-auto">
                 <Table className="border rounded-lg bg-white">
                   <TableHeader>
                     <TableRow>
@@ -308,45 +322,30 @@ export default function TrialWidget() {
                 </Table>
               </div>
 
-              {/* Conversion Gates */}
-              <div className="space-y-4">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                  <div className="text-center">
-                    <div className="text-sm font-medium text-blue-800 mb-2">🎉 Great! You can see the extracted data works perfectly</div>
-                    <div className="text-xs text-blue-600">Sign up to unlock editing and downloading features</div>
-                  </div>
-                </div>
-
+              {/* Simple conversion gates */}
+              <div className="space-y-3">
                 <Button
                   size="lg"
-                  className="btn-premium text-white font-semibold px-10 py-4 text-lg w-full rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300"
+                  className="btn-premium text-white font-semibold px-8 py-3 text-base w-full rounded-xl"
                   asChild
                 >
                   <a href="/signup">
-                    <Download className="h-6 w-6 mr-3" />
-                    Sign up to download CSV
+                    <Lock className="h-4 w-4 mr-2" />
+                    Sign up to edit data
                   </a>
                 </Button>
                 
-                <div className="text-center">
-                  <div className="text-sm font-medium text-gray-700 mb-2">Want to process 10 receipts at once?</div>
-                  <div className="text-lg font-semibold text-green-700 mb-2">FREE during feedback phase</div>
-                  <div className="text-sm text-gray-600 mb-4">$9/month after feedback period</div>
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="w-full rounded-2xl border-green-200 text-green-700 hover:bg-green-50"
-                    asChild
-                  >
-                    <a href="/signup">Start Free Now</a>
-                  </Button>
-                </div>
-
-                <div className="text-center text-xs text-gray-500">
-                  <div className="mb-1">✅ View extracted data (free)</div>
-                  <div className="mb-1">🔒 Edit data (sign up for free access)</div>
-                  <div>🔒 Download CSV (sign up for free access)</div>
-                </div>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="w-full rounded-xl border-purple-200 text-purple-700 hover:bg-purple-50"
+                  asChild
+                >
+                  <a href="/signup">
+                    <Download className="h-4 w-4 mr-2" />
+                    Sign up to download CSV
+                  </a>
+                </Button>
               </div>
             </>
           )}
