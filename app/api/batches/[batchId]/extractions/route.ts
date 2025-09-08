@@ -90,7 +90,7 @@ export async function GET(
       batchId,
       extractionsCount: extractions?.length || 0,
       csvFormat: batch.csv_format,
-      accountName: batch.accounts.name
+      accountName: (batch.accounts as any)?.name
     })
 
     return NextResponse.json({
@@ -98,7 +98,7 @@ export async function GET(
       batch: {
         id: batch.id,
         csv_format: batch.csv_format,
-        account_name: batch.accounts.name
+        account_name: (batch.accounts as any)?.name
       },
       extractions: extractions || []
     })

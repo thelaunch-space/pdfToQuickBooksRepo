@@ -60,6 +60,7 @@ export default function ReviewEditPage() {
   const [editValue, setEditValue] = useState('')
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
+  const [exporting, setExporting] = useState(false)
 
   // Fetch extractions when page loads
   const fetchExtractions = useCallback(async () => {
@@ -187,6 +188,62 @@ export default function ReviewEditPage() {
       saveEdit()
     } else if (e.key === 'Escape') {
       cancelEdit()
+    }
+  }
+
+  // Handle CSV export
+  const handleExportCSV = async () => {
+    if (!batchId || !user) return
+
+    setExporting(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        throw new Error('No valid session found')
+      }
+
+      const response = await fetch(`/api/batches/${batchId}/export-csv`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to export CSV')
+      }
+
+      // Get filename from Content-Disposition header
+      const contentDisposition = response.headers.get('Content-Disposition')
+      const filename = contentDisposition 
+        ? contentDisposition.split('filename=')[1]?.replace(/"/g, '') 
+        : `QuickBooks_Export_${new Date().toISOString().split('T')[0]}.csv`
+
+      // Create blob and trigger download
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+
+      toast({
+        title: "Export Successful",
+        description: `CSV file "${filename}" has been downloaded`
+      })
+    } catch (error) {
+      console.error('Error exporting CSV:', error)
+      toast({
+        title: "Export Failed",
+        description: error instanceof Error ? error.message : 'Failed to export CSV',
+        variant: "destructive"
+      })
+    } finally {
+      setExporting(false)
     }
   }
 
@@ -550,9 +607,17 @@ export default function ReviewEditPage() {
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Back to Dashboard
                 </Button>
-                <Button className="bg-purple-600 hover:bg-purple-700">
-                  <Download className="h-4 w-4 mr-2" />
-                  Export CSV
+                <Button 
+                  className="bg-purple-600 hover:bg-purple-700"
+                  onClick={handleExportCSV}
+                  disabled={exporting}
+                >
+                  {exporting ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4 mr-2" />
+                  )}
+                  {exporting ? 'Exporting...' : 'Export CSV'}
                 </Button>
               </div>
             </div>

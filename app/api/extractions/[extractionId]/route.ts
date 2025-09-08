@@ -170,8 +170,9 @@ export async function PUT(
       }, { status: 404 })
     }
 
-    const batch = extraction.batches
-    if (!batch.accounts || batch.accounts.user_id !== user.id) {
+    const batch = (extraction.batches as any)
+    const accounts = Array.isArray(batch.accounts) ? batch.accounts[0] : batch.accounts
+    if (!accounts || accounts.user_id !== user.id) {
       console.log('❌ Access denied - user does not own this extraction')
       return NextResponse.json({ 
         error: 'Access denied - you do not own this extraction' 
