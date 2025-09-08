@@ -15,6 +15,7 @@ import { FileText, LogOut, User, CreditCard, BarChart3, Plus, Building2, AlertTr
 import { useAuth } from '@/contexts/auth-context'
 import { supabase } from '@/lib/supabase'
 import { toast } from '@/hooks/use-toast'
+import BatchProcessingWidget from '@/components/batch-processing-widget'
 
 export default function DashboardPage() {
   const [profile, setProfile] = useState<any>(null)
@@ -437,58 +438,47 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Main Action Card */}
-        <Card className="shadow-xl border-0">
-          <CardHeader>
-            <CardTitle className="text-2xl font-semibold">Start Processing Receipts</CardTitle>
-            <CardDescription>
-              {selectedAccount 
-                ? `Upload PDF receipts for ${accounts.find(acc => acc.id === selectedAccount)?.name} and convert them to QuickBooks-ready CSV files`
-                : 'Select a client account above to start processing receipts'
-              }
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center py-12">
-              <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                <FileText className="h-12 w-12" />
+        {/* Batch Processing Interface */}
+        {selectedAccount ? (
+          <BatchProcessingWidget
+            selectedAccountId={selectedAccount}
+            selectedAccountName={accounts.find(acc => acc.id === selectedAccount)?.name || ''}
+            userProfile={profile}
+            onBatchComplete={() => {
+              fetchBatches(selectedAccount)
+              fetchProfile() // Refresh usage tracking
+            }}
+          />
+        ) : (
+          <Card className="shadow-xl border-0">
+            <CardHeader>
+              <CardTitle className="text-2xl font-semibold">Start Processing Receipts</CardTitle>
+              <CardDescription>
+                Select a client account above to start processing receipts
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-12">
+                <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                  <FileText className="h-12 w-12" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                  Select a Client Account
+                </h3>
+                <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                  Choose a client account from the dropdown above to start processing receipts. 
+                  If you don't have any accounts yet, create your first one to get started.
+                </p>
+                <Button 
+                  disabled
+                  className="bg-gray-400 text-white font-semibold px-8 py-3 cursor-not-allowed"
+                >
+                  Select Account First
+                </Button>
               </div>
-              {selectedAccount ? (
-                <>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                    Ready to Process Receipts
-                  </h3>
-                  <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                    Upload up to 10 PDF receipts at once, review the extracted data, 
-                    and download QuickBooks-ready CSV files for {accounts.find(acc => acc.id === selectedAccount)?.name}.
-                  </p>
-                  <Button 
-                    disabled
-                    className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold px-8 py-3"
-                  >
-                    Upload PDF Receipts (Coming Soon)
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                    Select a Client Account
-                  </h3>
-                  <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                    Choose a client account from the dropdown above to start processing receipts. 
-                    If you don't have any accounts yet, create your first one to get started.
-                  </p>
-                  <Button 
-                    disabled
-                    className="bg-gray-400 text-white font-semibold px-8 py-3 cursor-not-allowed"
-                  >
-                    Select Account First
-                  </Button>
-                </>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   )
