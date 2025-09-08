@@ -18,6 +18,7 @@ import { toast } from '@/hooks/use-toast'
 import BatchProcessingWidget from '@/components/batch-processing-widget'
 
 export default function DashboardPage() {
+  const router = useRouter()
   const [profile, setProfile] = useState<any>(null)
   const [accounts, setAccounts] = useState<any[]>([])
   const [batches, setBatches] = useState<any[]>([])
@@ -27,7 +28,6 @@ export default function DashboardPage() {
   const [newAccountName, setNewAccountName] = useState('')
   const [creatingAccount, setCreatingAccount] = useState(false)
   const { user, signOut } = useAuth()
-  const router = useRouter()
 
   useEffect(() => {
     if (!user) {
@@ -421,13 +421,23 @@ export default function DashboardPage() {
                             </p>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-sm font-medium text-gray-900">
-                            {new Date(batch.processed_at).toLocaleDateString()}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {new Date(batch.processed_at).toLocaleTimeString()}
-                          </p>
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <p className="text-sm font-medium text-gray-900">
+                              {new Date(batch.processed_at).toLocaleDateString()}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {new Date(batch.processed_at).toLocaleTimeString()}
+                            </p>
+                          </div>
+                          <Button
+                            size="sm"
+                            className="bg-purple-600 hover:bg-purple-700 text-white"
+                            onClick={() => router.push(`/review/${batch.id}`)}
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Review & Edit
+                          </Button>
                         </div>
                       </div>
                     ))}
