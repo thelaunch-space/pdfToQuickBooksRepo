@@ -43,6 +43,7 @@ interface Extraction {
 
 interface Batch {
   id: string
+  status: string
   csv_format: string
   account_name: string
 }
@@ -61,6 +62,7 @@ export default function ReviewEditPage() {
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
   const [exporting, setExporting] = useState(false)
+  const [isViewOnly, setIsViewOnly] = useState(false) // Start in edit mode by default
 
   // Fetch extractions when page loads
   const fetchExtractions = useCallback(async () => {
@@ -298,34 +300,68 @@ export default function ReviewEditPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-purple-50/30">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-xl border-b border-white/20 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-8">
-          <div className="flex h-20 items-center justify-between">
-            <div className="flex items-center space-x-4">
+      <header className="bg-white/95 backdrop-blur-2xl border-b border-slate-200/60 sticky top-0 z-50 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex h-16 items-center justify-between">
+            <div className="flex items-center space-x-6">
+              <div className="flex items-center space-x-3">
+                <div className="w-9 h-9 bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 text-white rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/25">
+                  <FileText className="h-4 w-4" />
+                </div>
+                <span className="text-lg font-semibold text-slate-900 tracking-tight">PDF to QuickBooks</span>
+              </div>
+              <nav className="hidden md:flex items-center space-x-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => router.push('/dashboard')}
+                  className="text-slate-600 hover:text-purple-600 hover:bg-purple-50/80 px-3 py-2 rounded-lg transition-all duration-200"
+                >
+                  Dashboard
+                </Button>
+                <div className="px-3 py-2 bg-purple-50 text-purple-700 rounded-lg font-medium text-sm">
+                  {isViewOnly ? 'View Data' : 'Review & Edit'}
+                </div>
+              </nav>
+              {/* Mode Toggle */}
+              <div className="flex items-center bg-slate-100 rounded-lg p-1">
+                <Button
+                  size="sm"
+                  variant={!isViewOnly ? "default" : "ghost"}
+                  onClick={() => setIsViewOnly(false)}
+                  className={`h-7 px-3 text-xs font-medium transition-all duration-200 ${
+                    !isViewOnly 
+                      ? 'bg-white text-slate-900 shadow-sm' 
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                  }`}
+                >
+                  Edit
+                </Button>
+                <Button
+                  size="sm"
+                  variant={isViewOnly ? "default" : "ghost"}
+                  onClick={() => setIsViewOnly(true)}
+                  className={`h-7 px-3 text-xs font-medium transition-all duration-200 ${
+                    isViewOnly 
+                      ? 'bg-white text-slate-900 shadow-sm' 
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                  }`}
+                >
+                  View
+                </Button>
+              </div>
+            </div>
+            <div className="flex items-center space-x-3">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => router.push('/dashboard')}
-                className="text-gray-700 hover:text-purple-600 hover:bg-purple-50"
+                className="text-slate-600 hover:text-purple-600 hover:bg-purple-50/80 h-8 px-3 transition-all duration-200"
               >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Dashboard
-              </Button>
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-purple-700 text-white rounded-2xl flex items-center justify-center shadow-lg">
-                <FileText className="h-5 w-5" />
-              </div>
-              <span className="text-xl font-semibold text-gray-900">Review & Edit Data</span>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Button
-                variant="outline"
-                onClick={() => router.push('/dashboard')}
-                className="text-gray-700 hover:text-purple-600 hover:bg-purple-50"
-              >
-                <Home className="h-4 w-4 mr-2" />
-                Dashboard
+                <ArrowLeft className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline font-medium">Back</span>
               </Button>
             </div>
           </div>
@@ -333,81 +369,102 @@ export default function ReviewEditPage() {
       </header>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Review & Edit Data</h1>
-          <p className="text-gray-600">
-            {batch ? `Review and edit extracted data for ${batch.account_name} (${batch.csv_format} format)` : 'Loading...'}
-          </p>
-        </div>
+      <div className="max-w-7xl mx-auto px-6 py-6">
 
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
-            <span className="ml-2 text-gray-600">Loading extractions...</span>
+          <div className="flex items-center justify-center py-16">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-purple-500/25">
+                <Loader2 className="h-8 w-8 animate-spin text-white" />
+              </div>
+              <p className="text-slate-600 font-medium">Loading extractions...</p>
+            </div>
           </div>
         ) : errors.fetch ? (
-          <Alert className="border-red-200 bg-red-50">
-            <AlertCircle className="h-4 w-4 text-red-600" />
-            <AlertDescription className="text-red-800">{errors.fetch}</AlertDescription>
-          </Alert>
+          <Card className="border-red-200 bg-red-50/50 shadow-lg">
+            <CardContent className="p-8 text-center">
+              <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <AlertCircle className="h-8 w-8 text-red-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-red-900 mb-2">Error Loading Data</h3>
+              <p className="text-red-700">{errors.fetch}</p>
+            </CardContent>
+          </Card>
         ) : extractions.length === 0 ? (
-          <Card>
-            <CardContent className="text-center py-12">
-              <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-              <p className="text-lg font-medium mb-2">No extractions found</p>
-              <p className="text-sm text-gray-500">This batch doesn't contain any processed extractions.</p>
+          <Card className="group relative overflow-hidden border-0 bg-white/90 backdrop-blur-xl shadow-xl shadow-slate-200/50">
+            <CardContent className="text-center py-16">
+              <div className="w-20 h-20 bg-slate-100 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                <FileText className="h-10 w-10 text-slate-400" />
+              </div>
+              <h3 className="text-xl font-semibold text-slate-900 mb-2">No Extractions Found</h3>
+              <p className="text-slate-600">This batch doesn't contain any processed extractions.</p>
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-8">
             {/* Summary Card */}
-            <Card>
-              <CardHeader>
+            <Card className="group relative overflow-hidden border-0 bg-white/90 backdrop-blur-xl shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-slate-200/60 transition-all duration-300">
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <CardHeader className="relative">
                 <CardTitle className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-purple-600" />
-                    Batch Summary
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-md shadow-purple-500/25">
+                      <FileText className="h-4 w-4 text-white" />
+                    </div>
+                    <span className="text-lg font-bold text-slate-900 tracking-tight">Batch Summary</span>
                   </div>
-                  <Badge variant="outline" className="text-purple-600 border-purple-200">
-                    {batch?.csv_format}
-                  </Badge>
+                  <div className="flex items-center gap-3">
+                    <Badge variant="outline" className="text-purple-600 border-purple-200 bg-purple-50/50 font-semibold">
+                      {batch?.csv_format}
+                    </Badge>
+                    {isViewOnly && (
+                      <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50/50 font-semibold">
+                        View Only
+                      </Badge>
+                    )}
+                  </div>
                 </CardTitle>
-                <CardDescription>
-                  {extractions.length} Receipt{extractions.length !== 1 ? 's' : ''} Processed • Click any field to edit • Changes are saved automatically
+                <CardDescription className="text-slate-600 font-medium">
+                  {extractions.length} Receipt{extractions.length !== 1 ? 's' : ''} Processed • {batch?.account_name} • {isViewOnly ? 'View mode' : 'Click any field to edit'}
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="text-center p-4 bg-gray-50 rounded-lg">
-                    <div className="text-2xl font-bold text-gray-900">{extractions.length}</div>
-                    <div className="text-sm text-gray-600">Total Receipts</div>
+              <CardContent className="relative">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="text-center p-6 bg-slate-50/50 rounded-xl border border-slate-200/60">
+                    <div className="text-3xl font-bold text-slate-900 tracking-tight">{extractions.length}</div>
+                    <div className="text-sm text-slate-600 font-medium mt-1">Total Receipts</div>
                   </div>
-                  <div className="text-center p-4 bg-gray-50 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">
+                  <div className="text-center p-6 bg-emerald-50/50 rounded-xl border border-emerald-200/60">
+                    <div className="text-3xl font-bold text-emerald-600 tracking-tight">
                       {extractions.filter(e => e.confidence_score >= 0.9).length}
                     </div>
-                    <div className="text-sm text-gray-600">High Confidence</div>
+                    <div className="text-sm text-emerald-600 font-medium mt-1">High Confidence</div>
                   </div>
-                  <div className="text-center p-4 bg-gray-50 rounded-lg">
-                    <div className="text-2xl font-bold text-red-600">
+                  <div className="text-center p-6 bg-amber-50/50 rounded-xl border border-amber-200/60">
+                    <div className="text-3xl font-bold text-amber-600 tracking-tight">
                       {extractions.filter(e => e.confidence_score < 0.7).length}
                     </div>
-                    <div className="text-sm text-gray-600">Need Review</div>
+                    <div className="text-sm text-amber-600 font-medium mt-1">Need Review</div>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             {/* Data Table */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Extracted Data</CardTitle>
-                <CardDescription>
-                  Review and edit the extracted data. Fields with low confidence are highlighted for your attention.
+            <Card className="group relative overflow-hidden border-0 bg-white/90 backdrop-blur-xl shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-slate-200/60 transition-all duration-300">
+              <div className="absolute inset-0 bg-gradient-to-br from-slate-500/3 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <CardHeader className="relative">
+                <CardTitle className="flex items-center gap-3 text-lg font-bold text-slate-900 tracking-tight">
+                  <div className="w-8 h-8 bg-gradient-to-br from-slate-500 to-slate-600 rounded-lg flex items-center justify-center shadow-md shadow-slate-500/25">
+                    <FileText className="h-4 w-4 text-white" />
+                  </div>
+                  Extracted Data
+                </CardTitle>
+                <CardDescription className="text-slate-600 font-medium">
+                  {isViewOnly ? 'View the extracted data below' : 'Review and edit the extracted data. Fields with low confidence are highlighted for your attention.'}
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="relative">
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
@@ -456,14 +513,20 @@ export default function ReviewEditPage() {
                                 </div>
                               </div>
                             ) : (
-                              <div 
-                                className="cursor-pointer hover:bg-purple-50 p-2 rounded border border-transparent hover:border-purple-200 transition-colors"
-                                onClick={() => startEdit(extraction.id, 'date', extraction.extracted_data.date)}
+                              <div
+                                className={`p-2 rounded border border-transparent transition-colors ${
+                                  isViewOnly 
+                                    ? 'cursor-default bg-gray-50' 
+                                    : 'cursor-pointer hover:bg-purple-50 hover:border-purple-200'
+                                }`}
+                                onClick={() => !isViewOnly && startEdit(extraction.id, 'date', extraction.extracted_data.date)}
                               >
                                 <div className="text-sm font-medium text-gray-900">
                                   {formatDateForDisplay(extraction.extracted_data.date)}
                                 </div>
-                                <div className="text-xs text-gray-500">Click to edit</div>
+                                <div className="text-xs text-gray-500">
+                                  {isViewOnly ? 'View only' : 'Click to edit'}
+                                </div>
                               </div>
                             )}
                             {errors[`${extraction.id}-date`] && (
@@ -494,14 +557,20 @@ export default function ReviewEditPage() {
                                 </div>
                               </div>
                             ) : (
-                              <div 
-                                className="cursor-pointer hover:bg-purple-50 p-2 rounded border border-transparent hover:border-purple-200 transition-colors"
-                                onClick={() => startEdit(extraction.id, 'vendor', extraction.extracted_data.vendor)}
+                              <div
+                                className={`p-2 rounded border border-transparent transition-colors ${
+                                  isViewOnly 
+                                    ? 'cursor-default bg-gray-50' 
+                                    : 'cursor-pointer hover:bg-purple-50 hover:border-purple-200'
+                                }`}
+                                onClick={() => !isViewOnly && startEdit(extraction.id, 'vendor', extraction.extracted_data.vendor)}
                               >
                                 <div className="text-sm font-medium text-gray-900">
                                   {extraction.extracted_data.vendor}
                                 </div>
-                                <div className="text-xs text-gray-500">Click to edit</div>
+                                <div className="text-xs text-gray-500">
+                                  {isViewOnly ? 'View only' : 'Click to edit'}
+                                </div>
                               </div>
                             )}
                             {errors[`${extraction.id}-vendor`] && (
@@ -533,14 +602,20 @@ export default function ReviewEditPage() {
                                 </div>
                               </div>
                             ) : (
-                              <div 
-                                className="cursor-pointer hover:bg-purple-50 p-2 rounded border border-transparent hover:border-purple-200 transition-colors"
-                                onClick={() => startEdit(extraction.id, 'amount', extraction.extracted_data.amount)}
+                              <div
+                                className={`p-2 rounded border border-transparent transition-colors ${
+                                  isViewOnly 
+                                    ? 'cursor-default bg-gray-50' 
+                                    : 'cursor-pointer hover:bg-purple-50 hover:border-purple-200'
+                                }`}
+                                onClick={() => !isViewOnly && startEdit(extraction.id, 'amount', extraction.extracted_data.amount)}
                               >
                                 <div className="text-sm font-medium text-gray-900">
                                   {formatAmountForDisplay(extraction.extracted_data.amount)}
                                 </div>
-                                <div className="text-xs text-gray-500">Click to edit</div>
+                                <div className="text-xs text-gray-500">
+                                  {isViewOnly ? 'View only' : 'Click to edit'}
+                                </div>
                               </div>
                             )}
                             {errors[`${extraction.id}-amount`] && (
@@ -571,14 +646,20 @@ export default function ReviewEditPage() {
                                 </div>
                               </div>
                             ) : (
-                              <div 
-                                className="cursor-pointer hover:bg-purple-50 p-2 rounded border border-transparent hover:border-purple-200 transition-colors"
-                                onClick={() => startEdit(extraction.id, 'description', extraction.extracted_data.description)}
+                              <div
+                                className={`p-2 rounded border border-transparent transition-colors ${
+                                  isViewOnly 
+                                    ? 'cursor-default bg-gray-50' 
+                                    : 'cursor-pointer hover:bg-purple-50 hover:border-purple-200'
+                                }`}
+                                onClick={() => !isViewOnly && startEdit(extraction.id, 'description', extraction.extracted_data.description)}
                               >
                                 <div className="text-sm font-medium text-gray-900">
                                   {extraction.extracted_data.description}
                                 </div>
-                                <div className="text-xs text-gray-500">Click to edit</div>
+                                <div className="text-xs text-gray-500">
+                                  {isViewOnly ? 'View only' : 'Click to edit'}
+                                </div>
                               </div>
                             )}
                             {errors[`${extraction.id}-description`] && (
@@ -594,33 +675,44 @@ export default function ReviewEditPage() {
             </Card>
 
             {/* Action Buttons */}
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-600">
-                {extractions.filter(e => e.confidence_score < 0.7).length > 0 && (
-                  <>
-                    {extractions.filter(e => e.confidence_score < 0.7).length} low confidence extraction{extractions.filter(e => e.confidence_score < 0.7).length !== 1 ? 's' : ''} need{extractions.filter(e => e.confidence_score < 0.7).length === 1 ? 's' : ''} review
-                  </>
-                )}
-              </div>
-              <div className="flex gap-3">
-                <Button variant="outline" onClick={() => router.push('/dashboard')}>
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Dashboard
-                </Button>
-                <Button 
-                  className="bg-purple-600 hover:bg-purple-700"
-                  onClick={handleExportCSV}
-                  disabled={exporting}
-                >
-                  {exporting ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Download className="h-4 w-4 mr-2" />
-                  )}
-                  {exporting ? 'Exporting...' : 'Export CSV'}
-                </Button>
-              </div>
-            </div>
+            <Card className="group relative overflow-hidden border-0 bg-white/90 backdrop-blur-xl shadow-xl shadow-slate-200/50">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-slate-600 font-medium">
+                    {extractions.filter(e => e.confidence_score < 0.7).length > 0 && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+                        <span>
+                          {extractions.filter(e => e.confidence_score < 0.7).length} low confidence extraction{extractions.filter(e => e.confidence_score < 0.7).length !== 1 ? 's' : ''} need{extractions.filter(e => e.confidence_score < 0.7).length === 1 ? 's' : ''} review
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-3">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => router.push('/dashboard')}
+                      className="border-slate-200 hover:border-slate-300 bg-white/50 hover:bg-white transition-all duration-200"
+                    >
+                      <ArrowLeft className="h-4 w-4 mr-2" />
+                      Back to Dashboard
+                    </Button>
+                    <Button 
+                      className="bg-gradient-to-r from-purple-600 via-purple-700 to-purple-800 hover:from-purple-700 hover:via-purple-800 hover:to-purple-900 text-white font-semibold shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300"
+                      onClick={handleExportCSV}
+                      disabled={exporting}
+                    >
+                      {exporting ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Download className="h-4 w-4 mr-2" />
+                      )}
+                      {exporting ? 'Exporting...' : 'Export CSV'}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         )}
       </div>
