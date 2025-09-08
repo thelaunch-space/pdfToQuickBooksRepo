@@ -22,20 +22,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Check localStorage for cached auth state first
-    const cachedAuth = localStorage.getItem('pdf-to-quickbooks-auth')
-    if (cachedAuth) {
-      try {
-        const { user: cachedUser, session: cachedSession, timestamp } = JSON.parse(cachedAuth)
-        // Check if cache is less than 1 hour old
-        if (Date.now() - timestamp < 60 * 60 * 1000) {
-          setUser(cachedUser)
-          setSession(cachedSession)
-          setLoading(false)
+    // Check localStorage for cached auth state first (only on client side)
+    if (typeof window !== 'undefined') {
+      const cachedAuth = localStorage.getItem('pdf-to-quickbooks-auth')
+      if (cachedAuth) {
+        try {
+          const { user: cachedUser, session: cachedSession, timestamp } = JSON.parse(cachedAuth)
+          // Check if cache is less than 1 hour old
+          if (Date.now() - timestamp < 60 * 60 * 1000) {
+            setUser(cachedUser)
+            setSession(cachedSession)
+            setLoading(false)
+          }
+        } catch (error) {
+          console.warn('Failed to parse cached auth:', error)
+          localStorage.removeItem('pdf-to-quickbooks-auth')
         }
-      } catch (error) {
-        console.warn('Failed to parse cached auth:', error)
-        localStorage.removeItem('pdf-to-quickbooks-auth')
       }
     }
 
@@ -45,15 +47,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(session?.user ?? null)
       setLoading(false)
       
-      // Cache the session if it exists
-      if (session) {
-        localStorage.setItem('pdf-to-quickbooks-auth', JSON.stringify({
-          user: session.user,
-          session: session,
-          timestamp: Date.now()
-        }))
-      } else {
-        localStorage.removeItem('pdf-to-quickbooks-auth')
+      // Cache the session if it exists (only on client side)
+      if (typeof window !== 'undefined') {
+        if (session) {
+          localStorage.setItem('pdf-to-quickbooks-auth', JSON.stringify({
+            user: session.user,
+            session: session,
+            timestamp: Date.now()
+          }))
+        } else {
+          localStorage.removeItem('pdf-to-quickbooks-auth')
+        }
       }
     })
 
@@ -65,15 +69,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(session?.user ?? null)
       setLoading(false)
       
-      // Update cache when auth state changes
-      if (session) {
-        localStorage.setItem('pdf-to-quickbooks-auth', JSON.stringify({
-          user: session.user,
-          session: session,
-          timestamp: Date.now()
-        }))
-      } else {
-        localStorage.removeItem('pdf-to-quickbooks-auth')
+      // Update cache when auth state changes (only on client side)
+      if (typeof window !== 'undefined') {
+        if (session) {
+          localStorage.setItem('pdf-to-quickbooks-auth', JSON.stringify({
+            user: session.user,
+            session: session,
+            timestamp: Date.now()
+          }))
+        } else {
+          localStorage.removeItem('pdf-to-quickbooks-auth')
+        }
       }
     })
 

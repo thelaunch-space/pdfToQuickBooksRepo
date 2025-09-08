@@ -4,7 +4,7 @@ import { Inter } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from "react"
 import { AuthProvider } from "@/contexts/auth-context"
-import "./globals.css"
+import "../styles/globals.css"
 
 const inter = Inter({
   subsets: ["latin"],
