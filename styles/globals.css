@@ -122,6 +122,17 @@
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* Smooth scroll behavior for anchor links */
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  /* Enhanced smooth scroll for navigation links */
+  .smooth-scroll {
+    scroll-behavior: smooth;
+    transition: all 0.3s ease;
+  }
 }
 
 @layer components {
