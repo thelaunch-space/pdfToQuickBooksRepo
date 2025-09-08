@@ -15,17 +15,14 @@ export default function HomePage() {
               <span className="text-xl font-semibold heading-premium">PDF to QuickBooks</span>
             </div>
             <nav className="header-nav">
-              <a href="#features" className="header-nav-link">
-                Features
-              </a>
-              <a href="#how-it-works" className="header-nav-link">
+              <a href="#how-it-works" className="header-nav-link smooth-scroll">
                 How it Works
               </a>
-              <a href="#pricing" className="header-nav-link">
-                Pricing
+              <a href="#features" className="header-nav-link smooth-scroll">
+                Features
               </a>
-              <a href="#support" className="header-nav-link">
-                Support
+              <a href="#pricing" className="header-nav-link smooth-scroll">
+                Pricing
               </a>
               <a href="/login" className="header-nav-link">
                 Sign In
