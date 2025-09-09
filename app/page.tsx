@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { Upload, ArrowRight, Check, Clock, Star, FileText, Download, Sparkles, Zap } from "lucide-react"
 import TrialWidget from "@/components/trial-widget"
+import Logo from "@/components/logo"
 
 export default function HomePage() {
   return (
@@ -8,12 +9,7 @@ export default function HomePage() {
       <header className="header-premium">
         <div className="header-container">
           <div className="header-content">
-            <div className="header-logo">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-purple-700 text-white rounded-2xl flex items-center justify-center shadow-lg">
-                <FileText className="h-5 w-5" />
-              </div>
-              <span className="text-xl font-semibold heading-premium">PDF to QuickBooks</span>
-            </div>
+            <Logo size="lg" className="heading-premium" />
             <nav className="header-nav">
               <a href="#how-it-works" className="header-nav-link smooth-scroll">
                 How it Works

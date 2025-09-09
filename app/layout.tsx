@@ -17,6 +17,11 @@ export const metadata: Metadata = {
   description:
     "Convert PDF receipts to QuickBooks-ready CSV files in minutes. Automated receipt processing for freelance bookkeepers.",
   generator: "v0.app",
+  icons: {
+    icon: '/logo-2.png',
+    shortcut: '/logo-2.png',
+    apple: '/logo-2.png',
+  },
 }
 
 export default function RootLayout({
