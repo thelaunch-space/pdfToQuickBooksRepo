@@ -13,14 +13,19 @@ import { supabase } from '@/lib/supabase'
 export default function PaymentPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
+    // Don't redirect if auth is still loading
+    if (authLoading) {
+      return
+    }
+
     if (!user) {
       router.push('/login')
     }
-  }, [user, router])
+  }, [user, router, authLoading])
 
   const handlePayment = async () => {
     setLoading(true)
@@ -56,7 +61,7 @@ export default function PaymentPage() {
     }
   }
 
-  if (!user) {
+  if (!user || authLoading) {
     return null // Will redirect to login
   }
 

@@ -23,6 +23,7 @@ import {
 import { toast } from "@/hooks/use-toast"
 import { useAuth } from "@/contexts/auth-context"
 import { supabase } from "@/lib/supabase"
+import { useRouter } from "next/navigation"
 
 interface UploadedFile {
   file: File
@@ -63,20 +64,40 @@ export default function BatchProcessingWidget({
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { user, session } = useAuth()
+  const router = useRouter()
 
   // Helper function to get fresh session token
   const getSessionToken = async () => {
-    if (session?.access_token) {
-      return session.access_token
+    // Always try to get a fresh session to handle token refresh
+    const { data: { session: freshSession }, error } = await supabase.auth.getSession()
+    
+    if (error) {
+      console.error('Error getting session:', error)
+      throw new Error('Session error: ' + error.message)
     }
     
-    // If no session in context, try to get it from Supabase
-    const { data: { session: freshSession } } = await supabase.auth.getSession()
     if (freshSession?.access_token) {
+      console.log('✅ Fresh session token obtained')
       return freshSession.access_token
     }
     
-    throw new Error('No valid session found')
+    throw new Error('No valid session found. Please sign in again.')
+  }
+
+  // Helper function to refresh session periodically during long operations
+  const refreshSession = async () => {
+    try {
+      const { data: { session }, error } = await supabase.auth.refreshSession()
+      if (error) {
+        console.warn('Session refresh failed:', error)
+        return false
+      }
+      console.log('✅ Session refreshed successfully')
+      return true
+    } catch (error) {
+      console.warn('Session refresh error:', error)
+      return false
+    }
   }
 
   // Validate subscription status
@@ -253,6 +274,20 @@ export default function BatchProcessingWidget({
         const progress = Math.round(((i + 1) / state.files.length) * 100)
         setState(prev => ({ ...prev, processingProgress: progress }))
 
+        // Refresh session every 3 files to prevent expiration during long processing
+        if (i > 0 && i % 3 === 0) {
+          console.log('🔄 Refreshing session to prevent expiration...')
+          await refreshSession()
+        }
+
+        // Get fresh token for each file to handle session refresh
+        let currentToken = token
+        try {
+          currentToken = await getSessionToken()
+        } catch (tokenError) {
+          console.warn('Failed to refresh token, using original token:', tokenError)
+        }
+
         const formData = new FormData()
         formData.append('file', file.file)
         formData.append('batchId', batchId)
@@ -261,13 +296,19 @@ export default function BatchProcessingWidget({
         const fileResponse = await fetch('/api/batch-processing/process-file', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${currentToken}`
           },
           body: formData
         })
 
         if (!fileResponse.ok) {
           const errorData = await fileResponse.json()
+          
+          // Handle session expiration specifically
+          if (fileResponse.status === 401) {
+            throw new Error('Your session has expired. Please sign in again.')
+          }
+          
           throw new Error(`Failed to process ${file.file.name}: ${errorData.error}`)
         }
 
@@ -278,18 +319,34 @@ export default function BatchProcessingWidget({
         })
       }
 
-      // Mark batch as completed
+      // Mark batch as completed - refresh session and get fresh token
+      console.log('🔄 Final session refresh before batch completion...')
+      await refreshSession()
+      
+      let finalToken = token
+      try {
+        finalToken = await getSessionToken()
+      } catch (tokenError) {
+        console.warn('Failed to refresh token for completion, using original token:', tokenError)
+      }
+
       const completeResponse = await fetch('/api/batch-processing/complete', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${finalToken}`
         },
         body: JSON.stringify({ batchId })
       })
 
       if (!completeResponse.ok) {
         const errorData = await completeResponse.json()
+        
+        // Handle session expiration specifically
+        if (completeResponse.status === 401) {
+          throw new Error('Your session has expired. Please sign in again.')
+        }
+        
         throw new Error(errorData.error || 'Failed to complete batch')
       }
 
@@ -310,20 +367,44 @@ export default function BatchProcessingWidget({
 
       onBatchComplete()
 
+      // Redirect to review page after a short delay
+      setTimeout(() => {
+        router.push(`/review/${batchId}`)
+      }, 1500)
+
     } catch (error) {
       console.error('Batch processing error:', error)
+      
+      const errorMessage = error instanceof Error ? error.message : 'Failed to process batch'
+      
       setState(prev => ({
         ...prev,
         isProcessing: false,
-        error: error instanceof Error ? error.message : 'Failed to process batch'
+        error: errorMessage
       }))
+      
+      // Handle session expiration specifically
+      if (errorMessage.includes('session has expired') || errorMessage.includes('Please sign in again')) {
+        toast({
+          title: "Session Expired",
+          description: "Your session has expired. Redirecting to login...",
+          variant: "destructive"
+        })
+        
+        // Redirect to login after a short delay
+        setTimeout(() => {
+          router.push('/login')
+        }, 2000)
+        return
+      }
+      
       toast({
         title: "Processing Failed",
-        description: error instanceof Error ? error.message : 'Failed to process batch',
+        description: errorMessage,
         variant: "destructive"
       })
     }
-  }, [isSubscriptionActive, wouldExceedLimit, state.files, state.selectedFormat, selectedAccountId, totalPages, onBatchComplete])
+  }, [isSubscriptionActive, wouldExceedLimit, state.files, state.selectedFormat, selectedAccountId, totalPages, onBatchComplete, router])
 
   const canProcess = isSubscriptionActive && !wouldExceedLimit && state.files.length > 0 && !state.isProcessing
 
