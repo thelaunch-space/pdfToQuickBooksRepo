@@ -72,13 +72,13 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-serif heading-premium mb-6 leading-tight">
-              From PDF receipts to QuickBooks
+              PDF to QuickBooks Converter
               <br />
               <em className="italic text-3d">in 4 simple steps</em>
             </h2>
             <p className="text-lg subheading-premium max-w-3xl mx-auto leading-relaxed">
               Transform your manual data entry process into an <em className="italic">automated workflow</em> that saves
-              hours every week
+              5+ hours every week
             </p>
           </div>
 
@@ -362,7 +362,7 @@ export default function HomePage() {
       <section className="py-20">
         <div className="max-w-4xl mx-auto px-8 text-center relative z-10">
           <h2 className="text-4xl md:text-5xl font-serif heading-premium mb-6 leading-tight">
-            Ready to save <em className="italic text-3d">5 hours</em> weekly?
+            Ready to save <em className="italic text-3d">5+ hours</em> weekly?
           </h2>
           <p className="text-lg subheading-premium mb-8 leading-relaxed">
             Join hundreds of bookkeepers who have transformed their workflow with{" "}
