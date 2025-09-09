@@ -237,6 +237,22 @@ export async function GET(
       }, { status: 404 })
     }
 
+    // Update download tracking
+    const { error: trackingError } = await supabase
+      .from('batches')
+      .update({
+        last_downloaded_at: new Date().toISOString()
+      })
+      .eq('id', batchId)
+
+    if (!trackingError) {
+      // Increment download count separately
+      await supabase.rpc('increment_download_count', { batch_id: batchId })
+    } else {
+      console.warn('⚠️ Failed to update download tracking:', trackingError)
+      // Don't fail the request, just log the warning
+    }
+
     // Generate CSV content based on format
     let csvContent: string
     if (batch.csv_format === '3-column') {

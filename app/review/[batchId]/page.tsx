@@ -56,7 +56,7 @@ interface Batch {
 export default function ReviewEditPage() {
   const router = useRouter()
   const params = useParams()
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const batchId = params.batchId as string
 
   const [batch, setBatch] = useState<Batch | null>(null)
@@ -94,6 +94,24 @@ export default function ReviewEditPage() {
       if (response.ok && result.success) {
         setBatch(result.batch)
         setExtractions(result.extractions)
+        
+        // Track edit action when user accesses the review page
+        try {
+          const { error: trackingError } = await supabase
+            .from('batches')
+            .update({
+              last_edited_at: new Date().toISOString()
+            })
+            .eq('id', batchId)
+          
+          if (!trackingError) {
+            // Increment edit count separately
+            await supabase.rpc('increment_edit_count', { batch_id: batchId })
+          }
+        } catch (trackingError) {
+          console.warn('Failed to update edit tracking:', trackingError)
+          // Don't fail the request, just log the warning
+        }
       } else {
         throw new Error(result.error || 'Failed to fetch extractions')
       }
@@ -238,6 +256,24 @@ export default function ReviewEditPage() {
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
 
+      // Mark batch as reviewed when CSV is downloaded
+      try {
+        const { error: updateError } = await supabase
+          .from('batches')
+          .update({
+            last_downloaded_at: new Date().toISOString()
+          })
+          .eq('id', batchId)
+
+        if (updateError) {
+          console.warn('Failed to update batch review status:', updateError)
+        } else {
+          console.log('✅ Batch marked as reviewed')
+        }
+      } catch (error) {
+        console.warn('Error updating batch review status:', error)
+      }
+
       toast({
         title: "Export Successful",
         description: `CSV file "${filename}" has been downloaded`
@@ -252,6 +288,14 @@ export default function ReviewEditPage() {
     } finally {
       setExporting(false)
     }
+  }
+
+  const handleReviewLater = () => {
+    router.push('/dashboard')
+    toast({
+      title: "Saved for Later",
+      description: "You can review this batch later from the Processing History page",
+    })
   }
 
   // Get confidence indicator
@@ -317,12 +361,17 @@ export default function ReviewEditPage() {
 
   // Redirect if no user
   useEffect(() => {
+    // Don't redirect if auth is still loading
+    if (authLoading) {
+      return
+    }
+
     if (!user) {
       router.push('/login')
     }
-  }, [user, router])
+  }, [user, router, authLoading])
 
-  if (!user) {
+  if (!user || authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-white flex items-center justify-center">
         <div className="text-center">
@@ -482,6 +531,14 @@ export default function ReviewEditPage() {
                     >
                       <ArrowLeft className="h-4 w-4 mr-2" />
                       Back to Dashboard
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={handleReviewLater}
+                      className="border-slate-200 hover:border-slate-300"
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      Review Later
                     </Button>
                     <Button 
                       className="bg-gradient-to-r from-purple-600 via-purple-700 to-purple-800 hover:from-purple-700 hover:via-purple-800 hover:to-purple-900 text-white font-semibold shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300"

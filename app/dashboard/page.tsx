@@ -30,9 +30,14 @@ export default function DashboardPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalBatches, setTotalBatches] = useState(0)
   const batchesPerPage = 10
-  const { user, signOut } = useAuth()
+  const { user, signOut, loading: authLoading } = useAuth()
 
   useEffect(() => {
+    // Don't redirect if auth is still loading
+    if (authLoading) {
+      return
+    }
+
     if (!user) {
       router.push('/login')
       return
@@ -40,7 +45,7 @@ export default function DashboardPage() {
 
     fetchProfile()
     fetchAccounts()
-  }, [user, router])
+  }, [user, router, authLoading])
 
   useEffect(() => {
     if (selectedAccount) {
@@ -113,6 +118,21 @@ export default function DashboardPage() {
     try {
       const from = (page - 1) * batchesPerPage
       const to = from + batchesPerPage - 1
+
+      // Verify the account belongs to the current user
+      const { data: account, error: accountError } = await supabase
+        .from('accounts')
+        .select('id')
+        .eq('id', accountId)
+        .eq('user_id', user?.id)
+        .single()
+
+      if (accountError || !account) {
+        console.error('Error: Account not found or access denied:', accountError)
+        setBatches([])
+        setTotalBatches(0)
+        return
+      }
 
       // Get total count for pagination
       const { count, error: countError } = await supabase
@@ -261,7 +281,7 @@ export default function DashboardPage() {
     }
   }
 
-  if (!user || loading) {
+  if (!user || loading || authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-white flex items-center justify-center">
         <div className="text-center">
@@ -289,6 +309,14 @@ export default function DashboardPage() {
                 <div className="px-3 py-2 bg-purple-50 text-purple-700 rounded-lg font-medium text-sm">
                   Dashboard
                 </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => router.push('/history')}
+                  className="px-3 py-2 text-slate-600 hover:text-purple-600 hover:bg-purple-50/80 transition-all duration-200"
+                >
+                  Processing History
+                </Button>
               </nav>
             </div>
             <div className="flex items-center space-x-3">
@@ -336,7 +364,7 @@ export default function DashboardPage() {
                     <span className="text-2xl font-bold text-slate-900 tracking-tight">
                       {profile ? profile.monthly_usage : '0'}
                     </span>
-                    <span className="text-sm text-slate-500 font-medium">/ 1,500</span>
+                    <span className="text-sm text-slate-500 font-medium">/ 1,500 pages</span>
                   </div>
                   <div className="space-y-1">
                     <Progress 
@@ -424,117 +452,6 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            {/* Processing History - Scrollable with Edit */}
-            <Card className="group relative overflow-hidden border-0 bg-white/90 backdrop-blur-xl shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-slate-200/60 transition-all duration-300">
-              <div className="absolute inset-0 bg-gradient-to-br from-slate-500/3 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <CardHeader className="relative pb-4">
-                <CardTitle className="flex items-center gap-2 text-lg font-bold text-slate-900 tracking-tight">
-                  <div className="w-7 h-7 bg-gradient-to-br from-slate-500 to-slate-600 rounded-lg flex items-center justify-center shadow-md shadow-slate-500/25">
-                    <History className="h-3 w-3 text-white" />
-                  </div>
-                  Processing History
-                </CardTitle>
-                <CardDescription className="text-slate-600 font-medium text-sm">
-                  {selectedAccount ? `Recent batches for ${accounts.find(acc => acc.id === selectedAccount)?.name}` : 'Your batch processing history will appear here'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="relative">
-                {selectedAccount ? (
-                  batches.length === 0 ? (
-                    <div className="text-center py-8 text-slate-500">
-                      <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center mx-auto mb-3">
-                        <History className="h-6 w-6 text-slate-400" />
-                      </div>
-                      <p className="font-semibold mb-1 text-slate-700 text-sm">No processing history</p>
-                      <p className="text-xs">Start processing receipts to see your batch history here.</p>
-                    </div>
-                  ) : (
-                    <div className="max-h-80 overflow-y-auto space-y-3 pr-2">
-                      {batches.map((batch) => {
-                        const processedDate = new Date(batch.processed_at)
-                        const timeString = processedDate.toLocaleTimeString('en-US', { 
-                          hour: 'numeric', 
-                          minute: '2-digit',
-                          hour12: true 
-                        })
-                        const dateString = processedDate.toLocaleDateString()
-                        
-                        return (
-                          <div key={batch.id} className="group/item flex items-center justify-between p-3 border border-slate-200/60 rounded-lg bg-slate-50/30 hover:bg-slate-50/60 hover:border-slate-300/60 transition-all duration-200">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-sm shadow-purple-500/20">
-                                <FileText className="h-4 w-4 text-white" />
-                              </div>
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <p className="text-sm font-semibold text-slate-900">
-                                    {batch.file_count} file{batch.file_count !== 1 ? 's' : ''}
-                                  </p>
-                                  <span className={`px-2 py-0.5 text-xs rounded-full font-semibold ${
-                                    batch.status === 'completed' 
-                                      ? 'bg-emerald-100 text-emerald-700' 
-                                      : batch.status === 'processing'
-                                      ? 'bg-amber-100 text-amber-700'
-                                      : 'bg-red-100 text-red-700'
-                                  }`}>
-                                    {batch.status}
-                                  </span>
-                                </div>
-                                <p className="text-xs text-slate-500 font-medium">
-                                  {batch.total_pages} pages • {dateString} at {timeString}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity duration-200">
-                              {batch.status === 'completed' && (
-                                <>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleDownloadCSV(batch.id)}
-                                    className="h-8 px-2 bg-white/80 hover:bg-white border-slate-200 hover:border-slate-300 shadow-sm"
-                                    title="Download CSV"
-                                  >
-                                    <Download className="h-3 w-3" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white h-8 px-2 shadow-sm shadow-blue-500/25"
-                                    onClick={() => router.push(`/review/${batch.id}`)}
-                                    title="Edit data"
-                                  >
-                                    <Pencil className="h-3 w-3" />
-                                  </Button>
-                                </>
-                              )}
-                              <Button
-                                size="sm"
-                                className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white h-8 px-2 shadow-sm shadow-purple-500/25"
-                                onClick={() => router.push(`/review/${batch.id}`)}
-                                title={batch.status === 'completed' ? 'View data' : 'View progress'}
-                              >
-                                {batch.status === 'completed' ? (
-                                  <Eye className="h-3 w-3" />
-                                ) : (
-                                  <FileText className="h-3 w-3" />
-                                )}
-                              </Button>
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  )
-                ) : (
-                  <div className="text-center py-8 text-slate-400">
-                    <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center mx-auto mb-3">
-                      <History className="h-6 w-6" />
-                    </div>
-                    <p className="text-sm font-medium">Select a client account to view processing history</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
           </div>
 
           {/* Right Column - Batch Processing Widget (Wider) */}

@@ -52,9 +52,10 @@ interface ReviewEditWidgetProps {
   isOpen: boolean
   onClose: () => void
   batchId: string
+  onReviewLater?: () => void
 }
 
-export default function ReviewEditWidget({ isOpen, onClose, batchId }: ReviewEditWidgetProps) {
+export default function ReviewEditWidget({ isOpen, onClose, batchId, onReviewLater }: ReviewEditWidgetProps) {
   const [batch, setBatch] = useState<Batch | null>(null)
   const [extractions, setExtractions] = useState<Extraction[]>([])
   const [loading, setLoading] = useState(false)
@@ -233,6 +234,24 @@ export default function ReviewEditWidget({ isOpen, onClose, batchId }: ReviewEdi
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
 
+      // Mark batch as reviewed when CSV is downloaded
+      try {
+        const { error: updateError } = await supabase
+          .from('batches')
+          .update({
+            last_downloaded_at: new Date().toISOString()
+          })
+          .eq('id', batchId)
+
+        if (updateError) {
+          console.warn('Failed to update batch review status:', updateError)
+        } else {
+          console.log('✅ Batch marked as reviewed')
+        }
+      } catch (error) {
+        console.warn('Error updating batch review status:', error)
+      }
+
       toast({
         title: "Export Successful",
         description: `CSV file "${filename}" has been downloaded`
@@ -247,6 +266,17 @@ export default function ReviewEditWidget({ isOpen, onClose, batchId }: ReviewEdi
     } finally {
       setExporting(false)
     }
+  }
+
+  const handleReviewLater = () => {
+    if (onReviewLater) {
+      onReviewLater()
+    }
+    onClose()
+    toast({
+      title: "Saved for Later",
+      description: "You can review this batch later from the Processing History page",
+    })
   }
 
   // Get confidence indicator
@@ -577,18 +607,28 @@ export default function ReviewEditWidget({ isOpen, onClose, batchId }: ReviewEdi
             <Button variant="outline" onClick={onClose}>
               Close
             </Button>
-            <Button 
-              className="bg-purple-600 hover:bg-purple-700"
-              onClick={handleExportCSV}
-              disabled={exporting}
-            >
-              {exporting ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Download className="h-4 w-4 mr-2" />
-              )}
-              {exporting ? 'Exporting...' : 'Export CSV'}
-            </Button>
+            <div className="flex gap-3">
+              <Button 
+                variant="outline"
+                onClick={handleReviewLater}
+                className="border-slate-200 hover:border-slate-300"
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Review Later
+              </Button>
+              <Button 
+                className="bg-purple-600 hover:bg-purple-700"
+                onClick={handleExportCSV}
+                disabled={exporting}
+              >
+                {exporting ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4 mr-2" />
+                )}
+                {exporting ? 'Exporting...' : 'Export CSV'}
+              </Button>
+            </div>
           </div>
         </div>
       </DialogContent>
