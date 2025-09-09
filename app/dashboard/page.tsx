@@ -16,6 +16,7 @@ import { useAuth } from '@/contexts/auth-context'
 import { supabase } from '@/lib/supabase'
 import { toast } from '@/hooks/use-toast'
 import BatchProcessingWidget from '@/components/batch-processing-widget'
+import Logo from '@/components/logo'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -299,12 +300,7 @@ export default function DashboardPage() {
         <div className="header-container">
           <div className="header-content">
             <div className="flex items-center space-x-6">
-              <div className="header-logo">
-                <div className="w-9 h-9 bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 text-white rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/25">
-                  <FileText className="h-4 w-4" />
-                </div>
-                <span className="text-lg font-semibold text-slate-900 tracking-tight">PDF to QuickBooks</span>
-              </div>
+              <Logo size="md" />
               <nav className="hidden md:flex items-center space-x-1">
                 <div className="px-3 py-2 bg-purple-50 text-purple-700 rounded-lg font-medium text-sm">
                   Dashboard

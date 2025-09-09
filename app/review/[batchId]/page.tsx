@@ -26,6 +26,7 @@ import {
 import { toast } from "@/hooks/use-toast"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/contexts/auth-context"
+import Logo from "@/components/logo"
 
 interface ExtractedData {
   date: string
@@ -389,12 +390,7 @@ export default function ReviewEditPage() {
         <div className="header-container">
           <div className="header-content">
             <div className="flex items-center space-x-6">
-              <div className="header-logo">
-                <div className="w-9 h-9 bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 text-white rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/25">
-                  <FileText className="h-4 w-4" />
-                </div>
-                <span className="text-lg font-semibold text-slate-900 tracking-tight">PDF to QuickBooks</span>
-              </div>
+              <Logo size="md" />
               <nav className="hidden md:flex items-center space-x-1">
                 <Button
                   variant="ghost"
