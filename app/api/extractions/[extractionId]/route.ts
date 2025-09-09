@@ -89,6 +89,16 @@ function validateDescription(description: string): { isValid: boolean; error?: s
   return { isValid: true }
 }
 
+function validateTransactionType(transactionType: string): { isValid: boolean; error?: string } {
+  if (!transactionType || transactionType.trim() === '') {
+    return { isValid: false, error: 'Transaction type is required' }
+  }
+  if (!['income', 'expense'].includes(transactionType)) {
+    return { isValid: false, error: 'Transaction type must be either "income" or "expense"' }
+  }
+  return { isValid: true }
+}
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: { extractionId: string } }
@@ -113,7 +123,7 @@ export async function PUT(
     }
 
     // Validate field name
-    const validFields = ['date', 'vendor', 'amount', 'description']
+    const validFields = ['date', 'vendor', 'amount', 'description', 'transaction_type']
     if (!validFields.includes(field)) {
       return NextResponse.json({ 
         error: `Invalid field: ${field}. Must be one of: ${validFields.join(', ')}` 
@@ -205,6 +215,9 @@ export async function PUT(
         break
       case 'description':
         validation = validateDescription(value)
+        break
+      case 'transaction_type':
+        validation = validateTransactionType(value)
         break
     }
 

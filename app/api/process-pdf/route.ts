@@ -1,5 +1,6 @@
 // API route for processing PDF files using OpenRouter API for trial users
 import { NextRequest, NextResponse } from 'next/server'
+import { classifyTransaction } from '@/lib/transaction-classifier'
 
 export async function POST(request: NextRequest) {
   console.log('🚀 PDF Processing API called')
@@ -173,6 +174,30 @@ Return ONLY valid JSON, no other text. If any field cannot be determined, use "U
     }
 
     console.log('✅ Final cleaned data:', cleanedData)
+
+    // Classify transaction type (income vs expense)
+    console.log('🔍 Classifying transaction type...')
+    try {
+      const classification = await classifyTransaction({
+        vendor: cleanedData.vendor,
+        description: cleanedData.description,
+        amount: cleanedData.amount,
+        accountName: 'Trial Account' // Mock account name for trial users
+      })
+      
+      // Add classification to the data
+      cleanedData.transaction_type = classification.transaction_type
+      cleanedData.classification_confidence = classification.confidence
+      cleanedData.classification_reasoning = classification.reasoning
+      
+      console.log('✅ Transaction classified:', classification)
+    } catch (classificationError) {
+      console.error('❌ Classification failed:', classificationError)
+      // Default to expense for trial users
+      cleanedData.transaction_type = 'expense'
+      cleanedData.classification_confidence = 0.3
+      cleanedData.classification_reasoning = 'Classification failed - defaulting to expense'
+    }
     
     const response = NextResponse.json({
       success: true,

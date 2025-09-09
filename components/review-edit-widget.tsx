@@ -16,7 +16,9 @@ import {
   Download,
   X,
   Loader2,
-  FileText
+  FileText,
+  TrendingUp,
+  TrendingDown
 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { supabase } from "@/lib/supabase"
@@ -26,6 +28,9 @@ interface ExtractedData {
   vendor: string
   amount: string
   description: string
+  transaction_type?: 'income' | 'expense'
+  classification_confidence?: number
+  classification_reasoning?: string
 }
 
 interface Extraction {
@@ -269,6 +274,35 @@ export default function ReviewEditWidget({ isOpen, onClose, batchId }: ReviewEdi
     return num.toLocaleString()
   }
 
+  // Get transaction type indicator
+  const getTransactionTypeIndicator = (transactionType?: string, confidence?: number) => {
+    // Default to expense if no type is specified (clean UX - no "failed" messages)
+    const type = transactionType || 'expense'
+    const isHighConfidence = (confidence || 0) >= 0.7
+    
+    if (type === 'income') {
+      return (
+        <Badge 
+          variant="outline" 
+          className={`text-green-700 border-green-200 ${isHighConfidence ? 'bg-green-50' : 'bg-yellow-50'}`}
+        >
+          <TrendingUp className="h-3 w-3 mr-1" />
+          Income
+        </Badge>
+      )
+    } else {
+      return (
+        <Badge 
+          variant="outline" 
+          className={`text-red-700 border-red-200 ${isHighConfidence ? 'bg-red-50' : 'bg-yellow-50'}`}
+        >
+          <TrendingDown className="h-3 w-3 mr-1" />
+          Expense
+        </Badge>
+      )
+    }
+  }
+
   // React to modal open/close
   React.useEffect(() => {
     if (isOpen) {
@@ -344,6 +378,7 @@ export default function ReviewEditWidget({ isOpen, onClose, batchId }: ReviewEdi
                       <TableHead className="w-32">Date</TableHead>
                       <TableHead className="w-48">Vendor</TableHead>
                       <TableHead className="w-32">Amount</TableHead>
+                      <TableHead className="w-32">Type</TableHead>
                       <TableHead>Description</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -451,6 +486,42 @@ export default function ReviewEditWidget({ isOpen, onClose, batchId }: ReviewEdi
                           )}
                           {errors[`${extraction.id}-amount`] && (
                             <div className="text-xs text-red-600 mt-1">{errors[`${extraction.id}-amount`]}</div>
+                          )}
+                        </TableCell>
+
+                        {/* Transaction Type Field */}
+                        <TableCell>
+                          {editingCell?.extractionId === extraction.id && editingCell?.field === 'transaction_type' ? (
+                            <div className="flex items-center gap-1">
+                              <select
+                                value={editValue}
+                                onChange={(e) => setEditValue(e.target.value)}
+                                className="h-8 text-sm border rounded px-2"
+                                autoFocus
+                              >
+                                <option value="expense">Expense</option>
+                                <option value="income">Income</option>
+                              </select>
+                              <Button size="sm" variant="ghost" onClick={saveEdit} disabled={saving}>
+                                {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <div 
+                              className="cursor-pointer hover:bg-gray-100 p-1 rounded"
+                              onClick={() => startEdit(extraction.id, 'transaction_type', extraction.extracted_data.transaction_type || 'expense')}
+                            >
+                              {getTransactionTypeIndicator(
+                                extraction.extracted_data.transaction_type, 
+                                extraction.extracted_data.classification_confidence
+                              )}
+                            </div>
+                          )}
+                          {errors[`${extraction.id}-transaction_type`] && (
+                            <div className="text-xs text-red-600 mt-1">{errors[`${extraction.id}-transaction_type`]}</div>
                           )}
                         </TableCell>
 

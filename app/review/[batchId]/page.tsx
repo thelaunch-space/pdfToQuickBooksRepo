@@ -19,7 +19,9 @@ import {
   Loader2,
   FileText,
   ArrowLeft,
-  Home
+  Home,
+  TrendingUp,
+  TrendingDown
 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { supabase } from "@/lib/supabase"
@@ -30,6 +32,9 @@ interface ExtractedData {
   vendor: string
   amount: string
   description: string
+  transaction_type?: 'income' | 'expense'
+  classification_confidence?: number
+  classification_reasoning?: string
 }
 
 interface Extraction {
@@ -274,6 +279,35 @@ export default function ReviewEditPage() {
     return num.toLocaleString()
   }
 
+  // Get transaction type indicator
+  const getTransactionTypeIndicator = (transactionType?: string, confidence?: number) => {
+    // Default to expense if no type is specified (clean UX - no "failed" messages)
+    const type = transactionType || 'expense'
+    const isHighConfidence = (confidence || 0) >= 0.7
+    
+    if (type === 'income') {
+      return (
+        <Badge 
+          variant="outline" 
+          className={`text-green-700 border-green-200 ${isHighConfidence ? 'bg-green-50' : 'bg-yellow-50'}`}
+        >
+          <TrendingUp className="h-3 w-3 mr-1" />
+          Income
+        </Badge>
+      )
+    } else {
+      return (
+        <Badge 
+          variant="outline" 
+          className={`text-red-700 border-red-200 ${isHighConfidence ? 'bg-red-50' : 'bg-yellow-50'}`}
+        >
+          <TrendingDown className="h-3 w-3 mr-1" />
+          Expense
+        </Badge>
+      )
+    }
+  }
+
   // Load data on mount
   useEffect(() => {
     if (user && batchId) {
@@ -402,79 +436,80 @@ export default function ReviewEditPage() {
           </Card>
         ) : (
           <div className="space-y-8">
-            {/* Summary Card */}
-            <Card className="group relative overflow-hidden border-0 bg-white/90 backdrop-blur-xl shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-slate-200/60 transition-all duration-300">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <CardHeader className="relative">
-                <CardTitle className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-md shadow-purple-500/25">
-                      <FileText className="h-4 w-4 text-white" />
-                    </div>
-                    <span className="text-lg font-bold text-slate-900 tracking-tight">Batch Summary</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Badge variant="outline" className="text-purple-600 border-purple-200 bg-purple-50/50 font-semibold">
-                      {batch?.csv_format}
-                    </Badge>
-                    {isViewOnly && (
-                      <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50/50 font-semibold">
-                        View Only
-                      </Badge>
-                    )}
-                  </div>
-                </CardTitle>
-                <CardDescription className="text-slate-600 font-medium">
-                  {extractions.length} Receipt{extractions.length !== 1 ? 's' : ''} Processed • {batch?.account_name} • {isViewOnly ? 'View mode' : 'Click any field to edit'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="relative">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="text-center p-6 bg-slate-50/50 rounded-xl border border-slate-200/60">
-                    <div className="text-3xl font-bold text-slate-900 tracking-tight">{extractions.length}</div>
-                    <div className="text-sm text-slate-600 font-medium mt-1">Total Receipts</div>
-                  </div>
-                  <div className="text-center p-6 bg-emerald-50/50 rounded-xl border border-emerald-200/60">
-                    <div className="text-3xl font-bold text-emerald-600 tracking-tight">
-                      {extractions.filter(e => e.confidence_score >= 0.9).length}
-                    </div>
-                    <div className="text-sm text-emerald-600 font-medium mt-1">High Confidence</div>
-                  </div>
-                  <div className="text-center p-6 bg-amber-50/50 rounded-xl border border-amber-200/60">
-                    <div className="text-3xl font-bold text-amber-600 tracking-tight">
-                      {extractions.filter(e => e.confidence_score < 0.7).length}
-                    </div>
-                    <div className="text-sm text-amber-600 font-medium mt-1">Need Review</div>
-                  </div>
+            {/* Batch Summary Header */}
+            <div className="bg-white/90 backdrop-blur-xl rounded-xl border border-slate-200/60 shadow-lg shadow-slate-200/50 p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-900 tracking-tight mb-1">Batch Summary</h2>
+                  <p className="text-slate-600 font-medium">
+                    {new Date().toLocaleDateString()} • {new Date().toLocaleTimeString()} • Account: {batch?.account_name} • {extractions.length} receipt{extractions.length !== 1 ? 's' : ''}
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
+                <div className="flex items-center gap-3">
+                  <Badge variant="outline" className="text-purple-600 border-purple-200 bg-purple-50/50 font-semibold">
+                    {batch?.csv_format}
+                  </Badge>
+                  {isViewOnly && (
+                    <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50/50 font-semibold">
+                      View Only
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </div>
 
             {/* Data Table */}
             <Card className="group relative overflow-hidden border-0 bg-white/90 backdrop-blur-xl shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-slate-200/60 transition-all duration-300">
               <div className="absolute inset-0 bg-gradient-to-br from-slate-500/3 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               <CardHeader className="relative">
-                <CardTitle className="flex items-center gap-3 text-lg font-bold text-slate-900 tracking-tight">
-                  <div className="w-8 h-8 bg-gradient-to-br from-slate-500 to-slate-600 rounded-lg flex items-center justify-center shadow-md shadow-slate-500/25">
-                    <FileText className="h-4 w-4 text-white" />
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-3 text-lg font-bold text-slate-900 tracking-tight">
+                      <div className="w-8 h-8 bg-gradient-to-br from-slate-500 to-slate-600 rounded-lg flex items-center justify-center shadow-md shadow-slate-500/25">
+                        <FileText className="h-4 w-4 text-white" />
+                      </div>
+                      Extracted Data
+                    </CardTitle>
+                    <CardDescription className="text-slate-600 font-medium">
+                      {isViewOnly ? 'View the extracted data below' : 'Review and edit the extracted data. Fields with low confidence are highlighted for your attention.'}
+                    </CardDescription>
                   </div>
-                  Extracted Data
-                </CardTitle>
-                <CardDescription className="text-slate-600 font-medium">
-                  {isViewOnly ? 'View the extracted data below' : 'Review and edit the extracted data. Fields with low confidence are highlighted for your attention.'}
-                </CardDescription>
+                  <div className="flex gap-3">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => router.push('/dashboard')}
+                      className="border-slate-200 hover:border-slate-300 bg-white/50 hover:bg-white transition-all duration-200"
+                    >
+                      <ArrowLeft className="h-4 w-4 mr-2" />
+                      Back to Dashboard
+                    </Button>
+                    <Button 
+                      className="bg-gradient-to-r from-purple-600 via-purple-700 to-purple-800 hover:from-purple-700 hover:via-purple-800 hover:to-purple-900 text-white font-semibold shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300"
+                      onClick={handleExportCSV}
+                      disabled={exporting}
+                    >
+                      {exporting ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Download className="h-4 w-4 mr-2" />
+                      )}
+                      {exporting ? 'Exporting...' : 'Export CSV'}
+                    </Button>
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent className="relative">
-                <div className="overflow-x-auto">
+              <CardContent className="relative p-0">
+                <div className="overflow-x-auto max-h-[70vh]">
                   <Table>
-                    <TableHeader>
+                    <TableHeader className="sticky top-0 bg-white z-10 border-b border-slate-200">
                       <TableRow>
-                        <TableHead className="w-12">Confidence</TableHead>
-                        <TableHead className="w-48">Filename</TableHead>
-                        <TableHead className="w-32">Date</TableHead>
-                        <TableHead className="w-48">Vendor</TableHead>
-                        <TableHead className="w-32">Amount</TableHead>
-                        <TableHead>Description</TableHead>
+                        <TableHead className="w-12 bg-white">Confidence</TableHead>
+                        <TableHead className="w-48 bg-white">Filename</TableHead>
+                        <TableHead className="w-32 bg-white">Date</TableHead>
+                        <TableHead className="w-48 bg-white">Vendor</TableHead>
+                        <TableHead className="w-32 bg-white">Amount</TableHead>
+                        <TableHead className="w-32 bg-white">Type</TableHead>
+                        <TableHead className="bg-white">Description</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -623,6 +658,53 @@ export default function ReviewEditPage() {
                             )}
                           </TableCell>
 
+                          {/* Transaction Type Field */}
+                          <TableCell>
+                            {editingCell?.extractionId === extraction.id && editingCell?.field === 'transaction_type' ? (
+                              <div className="space-y-2">
+                                <select
+                                  value={editValue}
+                                  onChange={(e) => setEditValue(e.target.value)}
+                                  className="h-10 text-base border-2 border-purple-300 focus:border-purple-500 rounded px-3 w-full"
+                                  autoFocus
+                                >
+                                  <option value="expense">Expense</option>
+                                  <option value="income">Income</option>
+                                </select>
+                                <div className="flex items-center gap-2">
+                                  <Button size="sm" onClick={saveEdit} disabled={saving} className="bg-green-600 hover:bg-green-700">
+                                    {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                                    <span className="ml-1">Save</span>
+                                  </Button>
+                                  <Button size="sm" variant="outline" onClick={cancelEdit}>
+                                    <X className="h-4 w-4" />
+                                    <span className="ml-1">Cancel</span>
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div
+                                className={`p-2 rounded border border-transparent transition-colors ${
+                                  isViewOnly 
+                                    ? 'cursor-default bg-gray-50' 
+                                    : 'cursor-pointer hover:bg-purple-50 hover:border-purple-200'
+                                }`}
+                                onClick={() => !isViewOnly && startEdit(extraction.id, 'transaction_type', extraction.extracted_data.transaction_type || 'expense')}
+                              >
+                                {getTransactionTypeIndicator(
+                                  extraction.extracted_data.transaction_type, 
+                                  extraction.extracted_data.classification_confidence
+                                )}
+                                <div className="text-xs text-gray-500 mt-1">
+                                  {isViewOnly ? 'View only' : 'Click to edit'}
+                                </div>
+                              </div>
+                            )}
+                            {errors[`${extraction.id}-transaction_type`] && (
+                              <div className="text-xs text-red-600 mt-1 bg-red-50 p-2 rounded">{errors[`${extraction.id}-transaction_type`]}</div>
+                            )}
+                          </TableCell>
+
                           {/* Description Field */}
                           <TableCell>
                             {editingCell?.extractionId === extraction.id && editingCell?.field === 'description' ? (
@@ -674,45 +756,21 @@ export default function ReviewEditPage() {
               </CardContent>
             </Card>
 
-            {/* Action Buttons */}
-            <Card className="group relative overflow-hidden border-0 bg-white/90 backdrop-blur-xl shadow-xl shadow-slate-200/50">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-slate-600 font-medium">
-                    {extractions.filter(e => e.confidence_score < 0.7).length > 0 && (
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
-                        <span>
-                          {extractions.filter(e => e.confidence_score < 0.7).length} low confidence extraction{extractions.filter(e => e.confidence_score < 0.7).length !== 1 ? 's' : ''} need{extractions.filter(e => e.confidence_score < 0.7).length === 1 ? 's' : ''} review
-                        </span>
-                      </div>
-                    )}
+            {/* Low Confidence Warning */}
+            {extractions.filter(e => e.confidence_score < 0.7).length > 0 && (
+              <Card className="group relative overflow-hidden border-0 bg-amber-50/50 backdrop-blur-xl shadow-lg shadow-amber-200/50">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+                      <AlertTriangle className="h-4 w-4 text-amber-600" />
+                    </div>
+                    <div className="text-sm text-amber-800 font-medium">
+                      {extractions.filter(e => e.confidence_score < 0.7).length} low confidence extraction{extractions.filter(e => e.confidence_score < 0.7).length !== 1 ? 's' : ''} need{extractions.filter(e => e.confidence_score < 0.7).length === 1 ? 's' : ''} review
+                    </div>
                   </div>
-                  <div className="flex gap-3">
-                    <Button 
-                      variant="outline" 
-                      onClick={() => router.push('/dashboard')}
-                      className="border-slate-200 hover:border-slate-300 bg-white/50 hover:bg-white transition-all duration-200"
-                    >
-                      <ArrowLeft className="h-4 w-4 mr-2" />
-                      Back to Dashboard
-                    </Button>
-                    <Button 
-                      className="bg-gradient-to-r from-purple-600 via-purple-700 to-purple-800 hover:from-purple-700 hover:via-purple-800 hover:to-purple-900 text-white font-semibold shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300"
-                      onClick={handleExportCSV}
-                      disabled={exporting}
-                    >
-                      {exporting ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <Download className="h-4 w-4 mr-2" />
-                      )}
-                      {exporting ? 'Exporting...' : 'Export CSV'}
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
       </div>
