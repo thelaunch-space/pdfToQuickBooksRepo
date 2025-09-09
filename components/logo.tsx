@@ -34,8 +34,8 @@ export default function Logo({ size = 'md', showText = true, className = '' }: L
           <FileText className="h-4 w-4" />
         </div>
         {showText && (
-          <span className={`${textSizes[size]} font-semibold text-slate-900 tracking-tight`}>
-            PDF to QuickBooks
+          <span className={`${textSizes[size]} font-semibold tracking-tight`}>
+            <span className="text-slate-900">PDFto</span><em className="italic" style={{background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #c084fc 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text'}}>QuickBooks</em>
           </span>
         )}
       </div>
@@ -53,8 +53,8 @@ export default function Logo({ size = 'md', showText = true, className = '' }: L
         onError={() => setImageError(true)}
       />
       {showText && (
-        <span className={`${textSizes[size]} font-semibold text-slate-900 tracking-tight`}>
-          PDF to QuickBooks
+        <span className={`${textSizes[size]} font-semibold tracking-tight`}>
+          <span className="text-slate-900">PDFto</span><em className="italic" style={{background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #c084fc 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text'}}>QuickBooks</em>
         </span>
       )}
     </div>

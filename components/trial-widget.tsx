@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Upload, FileText, Download, Lock, AlertCircle, CheckCircle, Loader2, TrendingUp, TrendingDown } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Upload, FileText, Download, Lock, AlertCircle, CheckCircle, Loader2, TrendingUp, TrendingDown, Edit3, Save, X } from "lucide-react"
 
 interface ExtractedData {
   date: string
@@ -35,6 +36,9 @@ export default function TrialWidget() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [processingProgress, setProcessingProgress] = useState(0)
   const [result, setResult] = useState<ProcessingResult | null>(null)
+  const [editableData, setEditableData] = useState<ExtractedData | null>(null)
+  const [editingField, setEditingField] = useState<string | null>(null)
+  const [editValue, setEditValue] = useState<string>('')
 
   const processFile = useCallback(async (file: File) => {
     console.log('🚀 Starting file processing:', file.name)
@@ -93,6 +97,7 @@ export default function TrialWidget() {
         success: true,
         data: result.data
       })
+      setEditableData({ ...result.data })
       setState('results')
     } catch (error) {
       console.error('💥 Processing error:', error)
@@ -178,6 +183,27 @@ export default function TrialWidget() {
     return <AlertCircle className="h-4 w-4" />
   }
 
+  const startEditing = (field: string, currentValue: string) => {
+    setEditingField(field)
+    setEditValue(currentValue)
+  }
+
+  const saveEdit = () => {
+    if (!editableData || !editingField) return
+    
+    setEditableData({
+      ...editableData,
+      [editingField]: editValue
+    })
+    setEditingField(null)
+    setEditValue('')
+  }
+
+  const cancelEdit = () => {
+    setEditingField(null)
+    setEditValue('')
+  }
+
   return (
     <div className="lg:pl-8">
       <div className="mb-6 text-center">
@@ -261,17 +287,17 @@ export default function TrialWidget() {
             </>
           )}
 
-          {state === 'results' && result?.data && (
+          {state === 'results' && result?.data && editableData && (
             <>
               <div className="mb-6">
                 <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl ring-2 ring-green-100/50">
                   <CheckCircle className="h-8 w-8 text-white" />
                 </div>
                 <div className="text-xl font-semibold text-gray-900 mb-2">Data Extracted Successfully!</div>
-                <div className="text-gray-600">Here's what we found in your receipt</div>
+                <div className="text-gray-600">Click any field to edit • Try the full editing experience</div>
               </div>
 
-              {/* Results Table - Clean and simple */}
+              {/* Editable Results Table */}
               <div className="mb-6 max-h-64 overflow-y-auto">
                 <Table className="border rounded-lg bg-white">
                   <TableHeader>
@@ -279,47 +305,172 @@ export default function TrialWidget() {
                       <TableHead>Field</TableHead>
                       <TableHead>Value</TableHead>
                       <TableHead>Confidence</TableHead>
+                      <TableHead className="w-20">Edit</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     <TableRow>
                       <TableCell className="font-medium">Date</TableCell>
-                      <TableCell>{result.data.date}</TableCell>
+                      <TableCell>
+                        {editingField === 'date' ? (
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              value={editValue}
+                              onChange={(e) => setEditValue(e.target.value)}
+                              className="h-8 text-sm"
+                              placeholder="MM/DD/YYYY"
+                            />
+                            <Button size="sm" onClick={saveEdit} className="h-8 w-8 p-0">
+                              <Save className="h-3 w-3" />
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={cancelEdit} className="h-8 w-8 p-0">
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className="cursor-pointer hover:bg-gray-50 p-1 rounded" onClick={() => startEditing('date', editableData.date)}>
+                            {editableData.date}
+                          </span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <Badge className={`${getConfidenceColor(result.data.confidence)} flex items-center space-x-1 w-fit`}>
                           {getConfidenceIcon(result.data.confidence)}
                           <span>{Math.round(result.data.confidence * 100)}%</span>
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => startEditing('date', editableData.date)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Edit3 className="h-3 w-3" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell className="font-medium">Vendor</TableCell>
-                      <TableCell>{result.data.vendor}</TableCell>
+                      <TableCell>
+                        {editingField === 'vendor' ? (
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              value={editValue}
+                              onChange={(e) => setEditValue(e.target.value)}
+                              className="h-8 text-sm"
+                              placeholder="Vendor name"
+                            />
+                            <Button size="sm" onClick={saveEdit} className="h-8 w-8 p-0">
+                              <Save className="h-3 w-3" />
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={cancelEdit} className="h-8 w-8 p-0">
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className="cursor-pointer hover:bg-gray-50 p-1 rounded" onClick={() => startEditing('vendor', editableData.vendor)}>
+                            {editableData.vendor}
+                          </span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <Badge className={`${getConfidenceColor(result.data.confidence)} flex items-center space-x-1 w-fit`}>
                           {getConfidenceIcon(result.data.confidence)}
                           <span>{Math.round(result.data.confidence * 100)}%</span>
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => startEditing('vendor', editableData.vendor)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Edit3 className="h-3 w-3" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell className="font-medium">Amount</TableCell>
-                      <TableCell>${result.data.amount}</TableCell>
+                      <TableCell>
+                        {editingField === 'amount' ? (
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              value={editValue}
+                              onChange={(e) => setEditValue(e.target.value)}
+                              className="h-8 text-sm"
+                              placeholder="0.00"
+                            />
+                            <Button size="sm" onClick={saveEdit} className="h-8 w-8 p-0">
+                              <Save className="h-3 w-3" />
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={cancelEdit} className="h-8 w-8 p-0">
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className="cursor-pointer hover:bg-gray-50 p-1 rounded" onClick={() => startEditing('amount', editableData.amount)}>
+                            ${editableData.amount}
+                          </span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <Badge className={`${getConfidenceColor(result.data.confidence)} flex items-center space-x-1 w-fit`}>
                           {getConfidenceIcon(result.data.confidence)}
                           <span>{Math.round(result.data.confidence * 100)}%</span>
                         </Badge>
                       </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => startEditing('amount', editableData.amount)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Edit3 className="h-3 w-3" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell className="font-medium">Description</TableCell>
-                      <TableCell>{result.data.description}</TableCell>
+                      <TableCell>
+                        {editingField === 'description' ? (
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              value={editValue}
+                              onChange={(e) => setEditValue(e.target.value)}
+                              className="h-8 text-sm"
+                              placeholder="Description"
+                            />
+                            <Button size="sm" onClick={saveEdit} className="h-8 w-8 p-0">
+                              <Save className="h-3 w-3" />
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={cancelEdit} className="h-8 w-8 p-0">
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className="cursor-pointer hover:bg-gray-50 p-1 rounded" onClick={() => startEditing('description', editableData.description)}>
+                            {editableData.description}
+                          </span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <Badge className={`${getConfidenceColor(result.data.confidence)} flex items-center space-x-1 w-fit`}>
                           {getConfidenceIcon(result.data.confidence)}
                           <span>{Math.round(result.data.confidence * 100)}%</span>
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => startEditing('description', editableData.description)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Edit3 className="h-3 w-3" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                     {result.data.transaction_type && (
@@ -349,29 +500,18 @@ export default function TrialWidget() {
                             </Badge>
                           )}
                         </TableCell>
+                        <TableCell></TableCell>
                       </TableRow>
                     )}
                   </TableBody>
                 </Table>
               </div>
 
-              {/* Simple conversion gates */}
+              {/* Conversion gates - editing allowed, downloads blocked */}
               <div className="space-y-3">
                 <Button
                   size="lg"
                   className="btn-premium text-white font-semibold px-8 py-3 text-base w-full rounded-xl"
-                  asChild
-                >
-                  <a href="/signup">
-                    <Lock className="h-4 w-4 mr-2" />
-                    Sign up to edit data
-                  </a>
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="w-full rounded-xl border-purple-200 text-purple-700 hover:bg-purple-50"
                   asChild
                 >
                   <a href="/signup">
@@ -410,6 +550,9 @@ export default function TrialWidget() {
                     setResult(null)
                     setUploadedFile(null)
                     setProcessingProgress(0)
+                    setEditableData(null)
+                    setEditingField(null)
+                    setEditValue('')
                   }}
                 >
                   Start Over
