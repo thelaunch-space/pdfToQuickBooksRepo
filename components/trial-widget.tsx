@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Upload, FileText, Download, Lock, AlertCircle, CheckCircle, Loader2 } from "lucide-react"
+import { Upload, FileText, Download, Lock, AlertCircle, CheckCircle, Loader2, TrendingUp, TrendingDown } from "lucide-react"
 
 interface ExtractedData {
   date: string
@@ -16,6 +16,9 @@ interface ExtractedData {
   amount: string
   description: string
   confidence: number
+  transaction_type?: 'income' | 'expense'
+  classification_confidence?: number
+  classification_reasoning?: string
 }
 
 interface ProcessingResult {
@@ -35,36 +38,37 @@ export default function TrialWidget() {
 
   const processFile = useCallback(async (file: File) => {
     console.log('🚀 Starting file processing:', file.name)
-    try {
-      setProcessingProgress(0)
-      
-      // Start the API call
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('format', selectedFormat)
+    
+    setProcessingProgress(0)
+    
+    // Start the API call
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('format', selectedFormat)
 
-      console.log('📤 Sending request to API...')
-      
-      // Create an AbortController for timeout
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
-      
+    console.log('📤 Sending request to API...')
+    
+    // Create an AbortController for timeout
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+    
+    // Update progress while API call is running
+    const progressSteps = [20, 40, 60, 80]
+    let currentStep = 0
+
+    const progressInterval = setInterval(() => {
+      if (currentStep < progressSteps.length) {
+        setProcessingProgress(progressSteps[currentStep])
+        currentStep++
+      }
+    }, 1000)
+
+    try {
       const apiPromise = fetch('/api/process-pdf', {
         method: 'POST',
         body: formData,
         signal: controller.signal
       })
-
-      // Update progress while API call is running
-      const progressSteps = [20, 40, 60, 80]
-      let currentStep = 0
-
-      const progressInterval = setInterval(() => {
-        if (currentStep < progressSteps.length) {
-          setProcessingProgress(progressSteps[currentStep])
-          currentStep++
-        }
-      }, 1000)
 
       // Wait for API response
       console.log('⏳ Waiting for API response...')
@@ -318,6 +322,35 @@ export default function TrialWidget() {
                         </Badge>
                       </TableCell>
                     </TableRow>
+                    {result.data.transaction_type && (
+                      <TableRow>
+                        <TableCell className="font-medium">Transaction Type</TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant="outline" 
+                            className={`${result.data.transaction_type === 'income' 
+                              ? 'text-green-700 border-green-200 bg-green-50' 
+                              : 'text-red-700 border-red-200 bg-red-50'
+                            } flex items-center space-x-1 w-fit`}
+                          >
+                            {result.data.transaction_type === 'income' ? (
+                              <TrendingUp className="h-3 w-3" />
+                            ) : (
+                              <TrendingDown className="h-3 w-3" />
+                            )}
+                            <span className="capitalize">{result.data.transaction_type}</span>
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {result.data.classification_confidence && (
+                            <Badge className={`${getConfidenceColor(result.data.classification_confidence)} flex items-center space-x-1 w-fit`}>
+                              {getConfidenceIcon(result.data.classification_confidence)}
+                              <span>{Math.round(result.data.classification_confidence * 100)}%</span>
+                            </Badge>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </div>

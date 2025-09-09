@@ -38,7 +38,7 @@ function generate3ColumnCSV(extractions: any[], batchProcessedAt: string): strin
       description = extraction.filename || 'Receipt'
     }
     
-    // Format amount (negative for expenses)
+    // Format amount based on transaction type
     const amountString = String(data.amount || '0')
     const amount = parseFloat(amountString.replace(/[$,\s]/g, ''))
     if (isNaN(amount)) {
@@ -46,8 +46,12 @@ function generate3ColumnCSV(extractions: any[], batchProcessedAt: string): strin
       return
     }
     
-    // Create CSV row: Date, Description, Amount (negative)
-    const csvRow = `"${date}","${description.replace(/"/g, '""')}","${-amount}"`
+    // Determine amount sign based on transaction type
+    const transactionType = data.transaction_type || 'expense' // Default to expense for backward compatibility
+    const formattedAmount = transactionType === 'income' ? amount : -amount
+    
+    // Create CSV row: Date, Description, Amount (positive for income, negative for expense)
+    const csvRow = `"${date}","${description.replace(/"/g, '""')}","${formattedAmount}"`
     rows.push(csvRow)
   })
   
@@ -89,7 +93,7 @@ function generate4ColumnCSV(extractions: any[], batchProcessedAt: string): strin
       description = extraction.filename || 'Receipt'
     }
     
-    // Format amount (positive for debit column)
+    // Format amount based on transaction type
     const amountString = String(data.amount || '0')
     const amount = parseFloat(amountString.replace(/[$,\s]/g, ''))
     if (isNaN(amount)) {
@@ -97,8 +101,13 @@ function generate4ColumnCSV(extractions: any[], batchProcessedAt: string): strin
       return
     }
     
-    // Create CSV row: Date, Description, Credit (blank), Debit (positive)
-    const csvRow = `"${date}","${description.replace(/"/g, '""')}","","${amount}"`
+    // Determine Credit/Debit based on transaction type
+    const transactionType = data.transaction_type || 'expense' // Default to expense for backward compatibility
+    const creditAmount = transactionType === 'income' ? amount : ''
+    const debitAmount = transactionType === 'expense' ? amount : ''
+    
+    // Create CSV row: Date, Description, Credit (for income), Debit (for expense)
+    const csvRow = `"${date}","${description.replace(/"/g, '""')}","${creditAmount}","${debitAmount}"`
     rows.push(csvRow)
   })
   

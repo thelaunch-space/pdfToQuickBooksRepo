@@ -1,6 +1,7 @@
 // API route for processing individual files in a batch - handles queued processing with rate limiting
 import { NextRequest, NextResponse } from 'next/server'
 import { createAPIClient, authenticateAPIRequest } from '@/lib/supabase-api'
+import { classifyTransaction } from '@/lib/transaction-classifier'
 
 // Rate limiting: Process one file every 2 seconds to avoid hitting OpenRouter limits
 const PROCESSING_DELAY = 2000
@@ -75,14 +76,14 @@ export async function POST(request: NextRequest) {
     // Create supabase instance for database operations (service role bypasses RLS)
     const supabase = createAPIClient()
 
-    // Verify batch ownership and status
+    // Verify batch ownership and status, and get account name
     const { data: batch, error: batchError } = await supabase
       .from('batches')
       .select(`
         id, 
         status, 
         account_id,
-        accounts!inner(user_id)
+        accounts!inner(user_id, name)
       `)
       .eq('id', batchId)
       .eq('accounts.user_id', user.id)
@@ -227,11 +228,35 @@ Return ONLY valid JSON, no other text. If any field cannot be determined, use "U
     }
 
     // Validate and clean the extracted data
-    const cleanedData = {
+    const cleanedData: any = {
       date: extractedData.date || 'Unknown',
       vendor: extractedData.vendor || 'Unknown',
       amount: extractedData.amount || '0',
       description: extractedData.description || 'Unknown'
+    }
+
+    // Classify transaction type (income vs expense)
+    console.log('🔍 Classifying transaction type...')
+    try {
+      const classification = await classifyTransaction({
+        vendor: cleanedData.vendor,
+        description: cleanedData.description,
+        amount: cleanedData.amount,
+        accountName: batch.accounts[0]?.name || 'Unknown Account'
+      })
+      
+      // Add classification to the data
+      cleanedData.transaction_type = classification.transaction_type
+      cleanedData.classification_confidence = classification.confidence
+      cleanedData.classification_reasoning = classification.reasoning
+      
+      console.log('✅ Transaction classified:', classification)
+    } catch (classificationError) {
+      console.error('❌ Classification failed:', classificationError)
+      // Default to expense
+      cleanedData.transaction_type = 'expense'
+      cleanedData.classification_confidence = 0.3
+      cleanedData.classification_reasoning = 'Classification failed - defaulting to expense'
     }
 
     // Calculate confidence score (simplified for now)
