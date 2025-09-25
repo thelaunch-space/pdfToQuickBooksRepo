@@ -1,7 +1,7 @@
 # PDF to QuickBooks - Project Structure Documentation
 
 ## Overview
-A Next.js application that converts PDF receipts to QuickBooks-ready CSV files using AI-powered data extraction. Built for freelance bookkeepers to save 4.5+ hours weekly on manual data entry.
+A Next.js application that converts PDF receipts to QuickBooks-ready CSV files using AI-powered data extraction. Built for freelance bookkeepers to save 5+ hours weekly on manual data entry.
 
 ## Tech Stack
 

@@ -97,7 +97,7 @@ export default function SignUpPage() {
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-semibold">Sign Up</CardTitle>
             <CardDescription>
-              Start saving 4.5+ hours weekly with automated receipt processing - Free during feedback phase
+              Start saving 5+ hours weekly with automated receipt processing - Free during feedback phase
             </CardDescription>
           </CardHeader>
           <CardContent>

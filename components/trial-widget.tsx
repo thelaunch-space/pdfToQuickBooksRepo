@@ -10,6 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Upload, FileText, Download, Lock, AlertCircle, CheckCircle, Loader2, TrendingUp, TrendingDown, Edit3, Save, X } from "lucide-react"
+import { trackTrialUpload } from "@/components/google-analytics"
+import TrackedLink from "@/components/tracked-link"
 
 interface ExtractedData {
   date: string
@@ -42,6 +44,9 @@ export default function TrialWidget() {
 
   const processFile = useCallback(async (file: File) => {
     console.log('🚀 Starting file processing:', file.name)
+    
+    // Track trial upload
+    trackTrialUpload(selectedFormat)
     
     setProcessingProgress(0)
     
@@ -93,6 +98,7 @@ export default function TrialWidget() {
       }
 
       console.log('✅ Processing successful:', result.data)
+      
       setResult({
         success: true,
         data: result.data
@@ -514,10 +520,10 @@ export default function TrialWidget() {
                   className="btn-premium text-white font-semibold px-8 py-3 text-base w-full rounded-xl"
                   asChild
                 >
-                  <a href="/signup">
+                  <TrackedLink href="/signup" source="trial_widget">
                     <Download className="h-4 w-4 mr-2" />
                     Sign up to download CSV
-                  </a>
+                  </TrackedLink>
                 </Button>
               </div>
             </>
@@ -566,13 +572,14 @@ export default function TrialWidget() {
       {/* Secondary CTA Options */}
       {state === 'upload' && (
         <div className="flex items-center justify-center space-x-8 text-sm text-gray-500 mt-6">
-          <a 
+          <TrackedLink 
             href="/signup"
+            source="landing_page"
             className="flex items-center space-x-2 hover:text-purple-600 transition-all duration-300 hover:scale-105"
           >
             <span>Skip Demo - Sign Up</span>
             <Download className="h-4 w-4" />
-          </a>
+          </TrackedLink>
           <div className="w-px h-4 bg-gray-300"></div>
           <a href="/login" className="hover:text-purple-600 transition-colors">
             Already have an account?

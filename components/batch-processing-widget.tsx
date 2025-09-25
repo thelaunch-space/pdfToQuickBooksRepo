@@ -24,6 +24,7 @@ import { toast } from "@/hooks/use-toast"
 import { useAuth } from "@/contexts/auth-context"
 import { supabase } from "@/lib/supabase"
 import { useRouter } from "next/navigation"
+import { trackCSVDownload } from "@/components/google-analytics"
 
 interface UploadedFile {
   file: File

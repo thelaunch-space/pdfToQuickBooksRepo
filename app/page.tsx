@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button"
 import { Upload, ArrowRight, Check, Clock, Star, FileText, Download, Sparkles, Zap } from "lucide-react"
 import TrialWidget from "@/components/trial-widget"
 import Logo from "@/components/logo"
+import TrackedLink from "@/components/tracked-link"
 
 export default function HomePage() {
   return (
@@ -24,7 +25,7 @@ export default function HomePage() {
                 Sign In
               </a>
               <Button className="header-cta-button" asChild>
-                <a href="/signup">Get Started</a>
+                <TrackedLink href="/signup" source="header">Get Started</TrackedLink>
               </Button>
             </nav>
           </div>
@@ -72,13 +73,13 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-serif heading-premium mb-6 leading-tight">
-              From PDF receipts to QuickBooks
+              PDF to QuickBooks Converter
               <br />
               <em className="italic text-3d">in 4 simple steps</em>
             </h2>
             <p className="text-lg subheading-premium max-w-3xl mx-auto leading-relaxed">
               Transform your manual data entry process into an <em className="italic">automated workflow</em> that saves
-              hours every week
+              5+ hours every week
             </p>
           </div>
 
@@ -306,7 +307,7 @@ export default function HomePage() {
                 </li>
               </ul>
               <Button className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-xl" asChild>
-                <a href="/signup">Start Free Now</a>
+                <TrackedLink href="/signup" source="pricing_section">Start Free Now</TrackedLink>
               </Button>
             </div>
 
@@ -362,17 +363,17 @@ export default function HomePage() {
       <section className="py-20">
         <div className="max-w-4xl mx-auto px-8 text-center relative z-10">
           <h2 className="text-4xl md:text-5xl font-serif heading-premium mb-6 leading-tight">
-            Ready to save <em className="italic text-3d">5 hours</em> weekly?
+            Ready to save <em className="italic text-3d">5+ hours</em> weekly?
           </h2>
           <p className="text-lg subheading-premium mb-8 leading-relaxed">
             Join hundreds of bookkeepers who have transformed their workflow with{" "}
             <em className="italic">automated receipt processing</em>
           </p>
           <Button size="lg" className="btn-premium text-white font-semibold px-10 py-5 text-lg rounded-2xl" asChild>
-            <a href="/signup">
+            <TrackedLink href="/signup" source="final_cta">
               <Sparkles className="h-5 w-5 mr-3" />
               Start Free Now
-            </a>
+            </TrackedLink>
           </Button>
         </div>
       </section>

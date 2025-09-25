@@ -76,7 +76,7 @@ export default function PaymentPage() {
             <span className="text-2xl font-semibold text-gray-900">PDF to QuickBooks</span>
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Complete Your Subscription</h1>
-          <p className="text-gray-600">Start saving 4.5+ hours weekly with automated receipt processing</p>
+          <p className="text-gray-600">Start saving 5+ hours weekly with automated receipt processing</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -128,7 +128,7 @@ export default function PaymentPage() {
                 <div className="flex items-center space-x-3">
                   <Clock className="h-5 w-5 text-purple-600" />
                   <div>
-                    <div className="font-semibold text-gray-900">4.5+ Hours Saved</div>
+                    <div className="font-semibold text-gray-900">5+ Hours Saved</div>
                     <div className="text-sm text-gray-600">Per week per bookkeeper</div>
                   </div>
                 </div>
