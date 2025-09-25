@@ -356,22 +356,38 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <div className="space-y-3">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-bold text-slate-900 tracking-tight">
-                      {profile ? profile.monthly_usage : '0'}
-                    </span>
-                    <span className="text-sm text-slate-500 font-medium">/ 1,500 pages</span>
-                  </div>
-                  <div className="space-y-1">
-                    <Progress 
-                      value={profile ? (profile.monthly_usage / 1500) * 100 : 0} 
-                      className="h-1.5 bg-slate-100"
-                    />
-                    <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
-                      <span>{profile ? `${Math.round((profile.monthly_usage / 1500) * 100)}%` : '0%'}</span>
-                      <span>Resets {profile?.usage_reset_date ? new Date(profile.usage_reset_date).toLocaleDateString() : 'Loading...'}</span>
-                    </div>
-                  </div>
+                  {(() => {
+                    // Compute next reset date as one month after period start (usage_reset_date)
+                    const periodStart = profile?.usage_reset_date ? new Date(profile.usage_reset_date) : null
+                    const nextReset = periodStart ? new Date(periodStart.getTime()) : null
+                    if (nextReset) {
+                      nextReset.setMonth(nextReset.getMonth() + 1)
+                    }
+                    const now = new Date()
+                    // If period already ended and user hasn't used since, display should show 0
+                    const effectiveUsage = profile ? ((nextReset && nextReset <= now) ? 0 : (profile.monthly_usage || 0)) : 0
+
+                    return (
+                      <>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-2xl font-bold text-slate-900 tracking-tight">
+                            {effectiveUsage}
+                          </span>
+                          <span className="text-sm text-slate-500 font-medium">/ 1,500 pages</span>
+                        </div>
+                        <div className="space-y-1">
+                          <Progress 
+                            value={(effectiveUsage / 1500) * 100} 
+                            className="h-1.5 bg-slate-100"
+                          />
+                          <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
+                            <span>{`${Math.round((effectiveUsage / 1500) * 100)}%`}</span>
+                            <span>Resets {nextReset ? nextReset.toLocaleDateString() : 'Loading...'}</span>
+                          </div>
+                        </div>
+                      </>
+                    )
+                  })()}
                 </div>
               </CardContent>
             </Card>
