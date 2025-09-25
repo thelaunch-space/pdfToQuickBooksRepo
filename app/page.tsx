@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button"
 import { Upload, ArrowRight, Check, Clock, Star, FileText, Download, Sparkles, Zap } from "lucide-react"
 import TrialWidget from "@/components/trial-widget"
 import Logo from "@/components/logo"
+import TrackedLink from "@/components/tracked-link"
 
 export default function HomePage() {
   return (
@@ -24,7 +25,7 @@ export default function HomePage() {
                 Sign In
               </a>
               <Button className="header-cta-button" asChild>
-                <a href="/signup">Get Started</a>
+                <TrackedLink href="/signup" source="header">Get Started</TrackedLink>
               </Button>
             </nav>
           </div>
@@ -306,7 +307,7 @@ export default function HomePage() {
                 </li>
               </ul>
               <Button className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-xl" asChild>
-                <a href="/signup">Start Free Now</a>
+                <TrackedLink href="/signup" source="pricing_section">Start Free Now</TrackedLink>
               </Button>
             </div>
 
@@ -369,10 +370,10 @@ export default function HomePage() {
             <em className="italic">automated receipt processing</em>
           </p>
           <Button size="lg" className="btn-premium text-white font-semibold px-10 py-5 text-lg rounded-2xl" asChild>
-            <a href="/signup">
+            <TrackedLink href="/signup" source="final_cta">
               <Sparkles className="h-5 w-5 mr-3" />
               Start Free Now
-            </a>
+            </TrackedLink>
           </Button>
         </div>
       </section>

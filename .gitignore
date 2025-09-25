@@ -28,3 +28,8 @@ next-env.d.ts
 
 # Cursor IDE
 .cursor/
+
+# Documentation files
+project-structure.md
+design-guidelines.md
+CLAUDE.md

@@ -4,6 +4,7 @@ import { Inter } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from "react"
 import { AuthProvider } from "@/contexts/auth-context"
+import GoogleAnalytics from "@/components/google-analytics"
 import "../styles/globals.css"
 
 const inter = Inter({
@@ -67,6 +68,7 @@ export default function RootLayout({
         />
       </head>
       <body className={`font-sans ${inter.variable}`}>
+        <GoogleAnalytics measurementId="G-G0DE5J73WP" />
         <AuthProvider>
           <Suspense fallback={null}>{children}</Suspense>
           <Analytics />
